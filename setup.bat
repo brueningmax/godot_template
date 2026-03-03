@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 :: --- USER CONFIGURATION ---
 set "DEFAULT_TEMPLATE_URL=https://github.com/brueningmax/godot_template.git"
-set "PLACEHOLDER_NAME=TEMPLATE_PROJECT_NAME"
+set "PLACEHOLDER_NAME=godot_game_template"
 :: --------------------------
 
 echo ============================================

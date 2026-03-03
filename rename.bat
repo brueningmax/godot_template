@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 :: --- CONFIGURATION ---
-set "PLACEHOLDER_NAME=TEMPLATE_PROJECT_NAME"
+set "PLACEHOLDER_NAME=godot_game_template"
 :: ---------------------
 
 echo ============================================
