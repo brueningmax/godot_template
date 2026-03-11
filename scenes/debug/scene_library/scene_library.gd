@@ -14,6 +14,8 @@ var selected_scene_path: String = ""
 var current_preview_instance: Node = null
 var is_orbiting: bool = false
 var orbit_camera: Camera3D = null
+var launched_scene_container: Node = null
+var launched_scene_instance: Node = null
 
 func _ready() -> void:
 	back_button.pressed.connect(_on_back_pressed)
@@ -21,6 +23,11 @@ func _ready() -> void:
 	scene_tree.item_selected.connect(_on_item_selected)
 	search_box.text_changed.connect(_on_search_changed)
 	preview_container.gui_input.connect(_on_preview_gui_input)
+	
+	# Create container for launched scenes
+	launched_scene_container = Node.new()
+	launched_scene_container.name = "LaunchedSceneContainer"
+	add_child(launched_scene_container)
 	
 	_populate_tree()
 
@@ -158,12 +165,17 @@ func _on_launch_pressed() -> void:
 	if selected_scene_path != "":
 		var scene_resource = load(selected_scene_path)
 		if scene_resource is PackedScene:
-			var scene_instance = scene_resource.instantiate()
-			if scene_instance is Node3D and external_camera_check.button_pressed:
+			# Clear any previously launched scene
+			if launched_scene_instance:
+				launched_scene_instance.queue_free()
+				launched_scene_instance = null
+			
+			launched_scene_instance = scene_resource.instantiate()
+			if launched_scene_instance is Node3D and external_camera_check.button_pressed:
 				# Add external camera setup for 3D scenes if requested
 				var pivot = Node3D.new()
 				pivot.name = "OrbitPivot"
-				scene_instance.add_child(pivot)
+				launched_scene_instance.add_child(pivot)
 				
 				var camera = Camera3D.new()
 				pivot.add_child(camera)
@@ -171,9 +183,18 @@ func _on_launch_pressed() -> void:
 				camera.look_at(Vector3.ZERO)
 				camera.make_current()
 			
-			get_tree().root.add_child(scene_instance)
-			get_tree().current_scene = scene_instance
-			queue_free()
+			# Add scene to the internal container
+			launched_scene_container.add_child(launched_scene_instance)
+			
+			# Hide library UI
+			visible = false
 
 func _on_back_pressed() -> void:
-	SceneManager.change_scene(SceneRegistry.SceneKey.MainMenu)
+	if launched_scene_instance:
+		# Return from launched scene to library
+		launched_scene_instance.queue_free()
+		launched_scene_instance = null
+		visible = true
+	else:
+		# Back to main menu
+		SceneManager.change_scene(SceneRegistry.SceneKey.MainMenu)
