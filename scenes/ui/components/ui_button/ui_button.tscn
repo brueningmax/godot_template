@@ -1,0 +1,40 @@
+[gd_scene load_steps=5 format=3 uid="uid://bv8jq6yowvfn3"]
+
+[ext_resource type="Script" uid="uid://d05hxflsu15cn" path="res://scenes/ui/components/ui_button/ui_button.gd" id="1_ssw8c"]
+[ext_resource type="AudioStream" uid="uid://c3clnky156skh" path="res://assets/audio/ui/hover.ogg" id="2_w4qwx"]
+[ext_resource type="AudioStream" uid="uid://jaaupxtjyxcr" path="res://assets/audio/ui/click.ogg" id="3_pktsc"]
+[ext_resource type="StyleBox" uid="uid://x4aopi38f115" path="res://scenes/ui/components/ui_button/ui_button.style.tres" id="4_5ekit"]
+
+[node name="UiButton" type="Control"]
+custom_minimum_size = Vector2(100, 50)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 100.0
+offset_bottom = 50.0
+size_flags_horizontal = 3
+script = ExtResource("1_ssw8c")
+hover_sound = ExtResource("2_w4qwx")
+click_sound = ExtResource("3_pktsc")
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_styles/normal = ExtResource("4_5ekit")
+theme_override_styles/pressed = ExtResource("4_5ekit")
+theme_override_styles/hover = ExtResource("4_5ekit")
+theme_override_styles/hover_pressed = ExtResource("4_5ekit")
+theme_override_styles/focus = ExtResource("4_5ekit")
+text = "Button"
+
+[node name="HoverPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("2_w4qwx")
+volume_db = -40.073
+
+[node name="ClickPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("3_pktsc")

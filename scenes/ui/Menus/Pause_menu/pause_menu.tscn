@@ -1,0 +1,51 @@
+[gd_scene load_steps=3 format=3 uid="uid://dkgp58w0vh01m"]
+
+[ext_resource type="Script" uid="uid://dsshsf541ncqb" path="res://scenes/ui/Menus/Pause_menu/pause_menu.gd" id="1_lde4l"]
+[ext_resource type="PackedScene" uid="uid://bv8jq6yowvfn3" path="res://scenes/ui/components/ui_button/ui_button.tscn" id="2_1q8ye"]
+
+[node name="PauseMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_lde4l")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/separation = 50
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Game Paused"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 25
+
+[node name="Resume" parent="MarginContainer/VBoxContainer/VBoxContainer" instance=ExtResource("2_1q8ye")]
+layout_mode = 2
+text = "Resume"
+
+[node name="Restart" parent="MarginContainer/VBoxContainer/VBoxContainer" instance=ExtResource("2_1q8ye")]
+layout_mode = 2
+text = "Restart"
+
+[node name="Settings" parent="MarginContainer/VBoxContainer/VBoxContainer" instance=ExtResource("2_1q8ye")]
+layout_mode = 2
+text = "Settings"
+
+[node name="Quit" parent="MarginContainer/VBoxContainer/VBoxContainer" instance=ExtResource("2_1q8ye")]
+layout_mode = 2
+text = "Quit"

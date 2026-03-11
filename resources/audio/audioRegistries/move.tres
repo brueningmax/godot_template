@@ -1,0 +1,53 @@
+[gd_resource type="Resource" script_class="AudioRegistry" format=3 uid="uid://blnf1xksw0ncq"]
+
+[ext_resource type="Script" uid="uid://4pdcacy5wdwh" path="res://globals/audioManager/resource_files/audio_set_resource.gd" id="1_j7rgs"]
+[ext_resource type="Script" uid="uid://dhl7176et7cb5" path="res://globals/audioManager/resource_files/audio_cue_resource.gd" id="2_dwdks"]
+[ext_resource type="AudioStream" uid="uid://c0n10d4kodamj" path="res://assets/audio/steps/step1.ogg" id="3_12ca8"]
+[ext_resource type="AudioStream" uid="uid://dcug583nsclaa" path="res://assets/audio/steps/step2.ogg" id="4_ul746"]
+[ext_resource type="AudioStream" uid="uid://dtgp5lf1e2281" path="res://assets/audio/steps/step3.ogg" id="5_yed4k"]
+[ext_resource type="AudioStream" uid="uid://0f47o4d0ars" path="res://assets/audio/steps/step4.ogg" id="6_8v6u1"]
+[ext_resource type="AudioStream" uid="uid://vdsrlj52l0mi" path="res://assets/audio/steps/step5.ogg" id="7_evumf"]
+[ext_resource type="Script" uid="uid://c5o622e3a7njv" path="res://globals/audioManager/resource_files/audio_registry_resource.gd" id="8_6e8mm"]
+
+[sub_resource type="Resource" id="Resource_e6xgn"]
+script = ExtResource("2_dwdks")
+id = &"step1"
+stream = ExtResource("3_12ca8")
+metadata/_custom_type_script = "uid://dhl7176et7cb5"
+
+[sub_resource type="Resource" id="Resource_gpegp"]
+script = ExtResource("2_dwdks")
+id = &"step2"
+stream = ExtResource("4_ul746")
+metadata/_custom_type_script = "uid://dhl7176et7cb5"
+
+[sub_resource type="Resource" id="Resource_mbsbh"]
+script = ExtResource("2_dwdks")
+id = &"step3"
+stream = ExtResource("5_yed4k")
+metadata/_custom_type_script = "uid://dhl7176et7cb5"
+
+[sub_resource type="Resource" id="Resource_mcy0v"]
+script = ExtResource("2_dwdks")
+id = &"step4"
+stream = ExtResource("6_8v6u1")
+metadata/_custom_type_script = "uid://dhl7176et7cb5"
+
+[sub_resource type="Resource" id="Resource_k44ow"]
+script = ExtResource("2_dwdks")
+id = &"step5"
+stream = ExtResource("7_evumf")
+metadata/_custom_type_script = "uid://dhl7176et7cb5"
+
+[sub_resource type="Resource" id="Resource_trkhe"]
+script = ExtResource("1_j7rgs")
+id = &"step"
+cues = Array[ExtResource("2_dwdks")]([SubResource("Resource_e6xgn"), SubResource("Resource_gpegp"), SubResource("Resource_mbsbh"), SubResource("Resource_mcy0v"), SubResource("Resource_k44ow")])
+bus_name = &"SFX"
+metadata/_custom_type_script = "uid://4pdcacy5wdwh"
+
+[resource]
+script = ExtResource("8_6e8mm")
+name_space = &"move"
+audio_sets = Array[ExtResource("1_j7rgs")]([SubResource("Resource_trkhe")])
+metadata/_custom_type_script = "uid://c5o622e3a7njv"

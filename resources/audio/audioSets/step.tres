@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="AudioSet" load_steps=13 format=3 uid="uid://drdgg8c7rijk6"]
+
+[ext_resource type="Script" uid="uid://dhl7176et7cb5" path="res://scenes/autoload/audioManager/resource_files/audio_cue_resource.gd" id="1_0k34c"]
+[ext_resource type="AudioStream" uid="uid://c0n10d4kodamj" path="res://assets/audio/steps/step1.ogg" id="2_jkrek"]
+[ext_resource type="AudioStream" uid="uid://dcug583nsclaa" path="res://assets/audio/steps/step2.ogg" id="3_82q56"]
+[ext_resource type="AudioStream" uid="uid://dtgp5lf1e2281" path="res://assets/audio/steps/step3.ogg" id="4_jpjjk"]
+[ext_resource type="AudioStream" uid="uid://0f47o4d0ars" path="res://assets/audio/steps/step4.ogg" id="5_nu0q8"]
+[ext_resource type="AudioStream" uid="uid://vdsrlj52l0mi" path="res://assets/audio/steps/step5.ogg" id="6_eguw6"]
+[ext_resource type="Script" uid="uid://4pdcacy5wdwh" path="res://scenes/autoload/audioManager/resource_files/audio_set_resource.gd" id="7_jkrek"]
+
+[sub_resource type="Resource" id="Resource_sb3c0"]
+script = ExtResource("1_0k34c")
+id = &"step1"
+stream = ExtResource("2_jkrek")
+metadata/_custom_type_script = "uid://dhl7176et7cb5"
+
+[sub_resource type="Resource" id="Resource_tkuwu"]
+script = ExtResource("1_0k34c")
+id = &"step2"
+stream = ExtResource("3_82q56")
+metadata/_custom_type_script = "uid://dhl7176et7cb5"
+
+[sub_resource type="Resource" id="Resource_may1a"]
+script = ExtResource("1_0k34c")
+id = &"step3"
+stream = ExtResource("4_jpjjk")
+metadata/_custom_type_script = "uid://dhl7176et7cb5"
+
+[sub_resource type="Resource" id="Resource_elfoi"]
+script = ExtResource("1_0k34c")
+id = &"step4"
+stream = ExtResource("5_nu0q8")
+metadata/_custom_type_script = "uid://dhl7176et7cb5"
+
+[sub_resource type="Resource" id="Resource_ti30l"]
+script = ExtResource("1_0k34c")
+id = &"step5"
+stream = ExtResource("6_eguw6")
+metadata/_custom_type_script = "uid://dhl7176et7cb5"
+
+[resource]
+script = ExtResource("7_jkrek")
+id = &"step"
+cues = Array[ExtResource("1_0k34c")]([SubResource("Resource_sb3c0"), SubResource("Resource_tkuwu"), SubResource("Resource_may1a"), SubResource("Resource_elfoi"), SubResource("Resource_ti30l")])
+metadata/_custom_type_script = "uid://4pdcacy5wdwh"

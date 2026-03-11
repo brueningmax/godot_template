@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://dweltaoi2hd0o"]
+
+[ext_resource type="Script" uid="uid://dflap7k3i4q8" path="res://globals/audioManager/audioManager.gd" id="1"]
+[ext_resource type="Script" uid="uid://c5o622e3a7njv" path="res://globals/audioManager/resource_files/audio_registry_resource.gd" id="2_shral"]
+[ext_resource type="Resource" uid="uid://blnf1xksw0ncq" path="res://resources/audio/audioRegistries/move.tres" id="3_jwl7x"]
+[ext_resource type="Resource" uid="uid://ch82m46yqvjyb" path="res://resources/audio/audioRegistries/ui.tres" id="4_jwl7x"]
+
+[node name="AudioManagerNode" type="Node" unique_id=2145215153]
+script = ExtResource("1")
+registries = Array[ExtResource("2_shral")]([ExtResource("4_jwl7x"), ExtResource("3_jwl7x")])

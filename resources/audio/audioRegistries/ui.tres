@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="AudioRegistry" format=3 uid="uid://ch82m46yqvjyb"]
+
+[ext_resource type="Script" uid="uid://4pdcacy5wdwh" path="res://globals/audioManager/resource_files/audio_set_resource.gd" id="1_3fmtq"]
+[ext_resource type="Script" uid="uid://c5o622e3a7njv" path="res://globals/audioManager/resource_files/audio_registry_resource.gd" id="2_8jcy5"]
+[ext_resource type="Script" uid="uid://dhl7176et7cb5" path="res://globals/audioManager/resource_files/audio_cue_resource.gd" id="2_isetr"]
+[ext_resource type="AudioStream" uid="uid://jaaupxtjyxcr" path="res://assets/audio/ui/click.ogg" id="3_supie"]
+[ext_resource type="AudioStream" uid="uid://c3clnky156skh" path="res://assets/audio/ui/hover.ogg" id="4_yxntm"]
+
+[sub_resource type="Resource" id="Resource_isetr"]
+script = ExtResource("2_isetr")
+stream = ExtResource("3_supie")
+metadata/_custom_type_script = "uid://dhl7176et7cb5"
+
+[sub_resource type="Resource" id="Resource_supie"]
+script = ExtResource("1_3fmtq")
+id = &"click"
+cues = Array[ExtResource("2_isetr")]([SubResource("Resource_isetr")])
+bus_name = &"UI"
+metadata/_custom_type_script = "uid://4pdcacy5wdwh"
+
+[sub_resource type="Resource" id="Resource_yxntm"]
+script = ExtResource("2_isetr")
+stream = ExtResource("4_yxntm")
+metadata/_custom_type_script = "uid://dhl7176et7cb5"
+
+[sub_resource type="Resource" id="Resource_1wf5g"]
+script = ExtResource("1_3fmtq")
+id = &"hover"
+cues = Array[ExtResource("2_isetr")]([SubResource("Resource_yxntm")])
+bus_name = &"UI"
+metadata/_custom_type_script = "uid://4pdcacy5wdwh"
+
+[resource]
+script = ExtResource("2_8jcy5")
+name_space = &"ui"
+audio_sets = Array[ExtResource("1_3fmtq")]([SubResource("Resource_supie"), SubResource("Resource_1wf5g")])
+metadata/_custom_type_script = "uid://c5o622e3a7njv"
