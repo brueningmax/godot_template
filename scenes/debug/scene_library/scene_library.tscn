@@ -1,0 +1,103 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://lrtratfdo48c" path="res://scenes/debug/scene_library/scene_library.gd" id="1_script"]
+
+
+[node name="SceneLibrary" type="Control"]
+script = ExtResource("1_script")
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.129412, 0.14902, 0.192157, 1)
+
+[node name="HSplitContainer" type="HSplitContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+split_offset = 300
+
+[node name="TreePanel" type="PanelContainer" parent="HSplitContainer"]
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="HSplitContainer/TreePanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="HSplitContainer/TreePanel/VBox"]
+layout_mode = 2
+text = "Project Scenes"
+
+[node name="Search" type="LineEdit" parent="HSplitContainer/TreePanel/VBox"]
+layout_mode = 2
+placeholder_text = "Search scenes..."
+clear_button_enabled = true
+
+[node name="SceneTree" type="Tree" parent="HSplitContainer/TreePanel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+hide_root = true
+
+[node name="ExternalCameraCheck" type="CheckBox" parent="HSplitContainer/TreePanel/VBox"]
+layout_mode = 2
+text = "Launch with External Camera"
+
+[node name="BackToMenu" type="Button" parent="HSplitContainer/TreePanel/VBox"]
+layout_mode = 2
+text = "Back to Menu"
+
+[node name="PreviewPanel" type="PanelContainer" parent="HSplitContainer"]
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="HSplitContainer/PreviewPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="HSplitContainer/PreviewPanel/VBox"]
+layout_mode = 2
+text = "Scene Preview"
+horizontal_alignment = 1
+
+[node name="PreviewContainer" type="SubViewportContainer" parent="HSplitContainer/PreviewPanel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="HSplitContainer/PreviewPanel/VBox/PreviewContainer"]
+handle_input_locally = false
+size = Vector2i(2, 2)
+render_target_update_mode = 4
+
+[node name="NoPreviewLabel" type="Label" parent="HSplitContainer/PreviewPanel/VBox/PreviewContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Select a Scene to Preview"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LaunchButton" type="Button" parent="HSplitContainer/PreviewPanel/VBox"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+disabled = true
+text = "Launch Scene"

@@ -11,6 +11,10 @@ func _on_play_pressed() -> void:
 	# if the text is "", the RngManager will create a random seed
 	RngManager.set_seed(seed_input.text)
 	SceneManager.goto_endless_mode()
+
+func _on_debug_pressed() -> void:
+	# if the text is "", the RngManager will create a random seed
+	SceneManager.change_scene(SceneRegistry.SceneKey.DebugViewer)
 	
 func _on_movement_lab_pressed() -> void:
 	SceneManager.goto_movement_lab(0.1)

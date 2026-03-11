@@ -28,7 +28,7 @@ func _ready():
 	overlay.add_child(fade_rect)
 	fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 
-	change_scene_with_splash(SceneRegistry.SceneKey.MainMenu)
+	change_scene(SceneRegistry.SceneKey.MainMenu)
 
 func change_scene(scene_key: SceneRegistry.SceneKey) -> void:
 	if _changing: return

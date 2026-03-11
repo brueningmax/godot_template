@@ -1,0 +1,77 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://vsjn07djjsoe" path="res://scenes/debug/scene_library/debug_launcher_3d.gd" id="1_script"]
+
+
+[node name="DebugLauncher3D" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, 0.75, -0.433013, 0, 0, 0)
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+
+[node name="CameraContainer" type="Node3D" parent="."]
+
+[node name="Camera3D" type="Camera3D" parent="CameraContainer"]
+transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, 5, 10)
+
+[node name="SceneContainer" type="Node3D" parent="."]
+
+[node name="UILayer" type="CanvasLayer" parent="."]
+
+[node name="MarginContainer" type="MarginContainer" parent="UILayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+mouse_filter = 2
+
+[node name="Control" type="Control" parent="UILayer/MarginContainer"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UILayer/MarginContainer/Control"]
+layout_mode = 0
+offset_right = 250.0
+offset_bottom = 100.0
+theme_override_constants/separation = 10
+
+[node name="BackButton" type="Button" parent="UILayer/MarginContainer/Control/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "Back to Library"
+
+[node name="CameraControlCheck" type="CheckBox" parent="UILayer/MarginContainer/Control/VBoxContainer"]
+layout_mode = 2
+text = "Enable Camera Controls"
+
+[node name="StatsVBox" type="VBoxContainer" parent="UILayer/MarginContainer/Control"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -250.0
+offset_bottom = 100.0
+grow_horizontal = 0
+theme_override_constants/separation = 5
+
+[node name="StatsLabel" type="Label" parent="UILayer/MarginContainer/Control/StatsVBox"]
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+text = "FPS: 60
+Draw Calls: 0
+Objects: 0"
+horizontal_alignment = 2
+
+[node name="FPSBar" type="ProgressBar" parent="UILayer/MarginContainer/Control/StatsVBox"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+show_percentage = false
