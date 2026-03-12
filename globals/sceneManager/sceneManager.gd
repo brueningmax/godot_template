@@ -41,6 +41,9 @@ func change_scene(scene_key: SceneRegistry.SceneKey) -> void:
 		return
 	var new_scene = packed.instantiate()
 	
+	if "SignalBus" in get_tree().root:
+		get_tree().root.get_node("SignalBus").emit_signal("scene_change_started", scene_key)
+
 	holder.add_child(new_scene)
 	if current_scene:
 		current_scene.queue_free()
@@ -59,6 +62,9 @@ func change_scene_with_splash(next_key: SceneRegistry.SceneKey, splash_time: flo
 
 	if current_scene:
 		current_scene.hide()
+
+	if "SignalBus" in get_tree().root:
+		get_tree().root.get_node("SignalBus").emit_signal("scene_change_started", next_key)
 
 	await _fade_out(0.25)
 	if current_scene:
@@ -87,6 +93,8 @@ func change_scene_with_splash(next_key: SceneRegistry.SceneKey, splash_time: flo
 		
 	await _fade_in(0.25)
 	emit_signal("scene_changed", current_scene)
+	if "SignalBus" in get_tree().root:
+		get_tree().root.get_node("SignalBus").emit_signal("scene_change_finished", current_scene)
 	_changing = false
 
 # --- Fade helpers ---

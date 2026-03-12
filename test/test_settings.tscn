@@ -1,0 +1,77 @@
+[gd_scene load_steps=2 format=3 uid="uid://testsettings01"]
+
+[ext_resource type="Script" path="res://test/test_settings.gd" id="1_test"]
+
+[node name="TestSettings" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_test")
+
+[node name="Panel" type="Panel" parent="."]
+custom_minimum_size = Vector2(400, 300)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -150.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="Label" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+text = "Settings Manager Test"
+horizontal_alignment = 1
+
+[node name="MasterVol" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/VBox/MasterVol"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "Master Vol"
+
+[node name="Slider" type="HSlider" parent="Panel/VBox/MasterVol"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1.0
+step = 0.05
+value = 0.8
+
+[node name="Fullscreen" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/VBox/Fullscreen"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "Fullscreen"
+
+[node name="Check" type="CheckBox" parent="Panel/VBox/Fullscreen"]
+layout_mode = 2
+button_pressed = true
+
+[node name="BtnPlaySound" type="Button" parent="Panel/VBox"]
+layout_mode = 2
+text = "Play Test Sound (ui.click)"
+
+[node name="Log" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Log: Waiting for interaction..."
+horizontal_alignment = 1

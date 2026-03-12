@@ -25,6 +25,7 @@ SignalBus="*uid://dtrf6qhhjchh"
 RngManager="*uid://j1yxa6tth2jg"
 Audio="*uid://dweltaoi2hd0o"
 SceneManager="*uid://d20rnm35g01po"
+SettingsManager="*res://globals/settingsManager/settingsManager.gd"
 
 [input]
 
