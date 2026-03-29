@@ -1,0 +1,34 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Launch Godot Scene",
+            "type": "process",
+            "command": "E:/SteamLibrary/steamapps/common/Godot Engine/godot.windows.opt.tools.64.exe",
+            "args": [
+                "--path",
+                "${workspaceFolder}",
+                "res://${fileBasenameNoExtension}.tscn",
+                "--remote-debug",
+                "127.0.0.1:6006"
+            ],
+            "isBackground": true,
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": ".*"
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": ".*",
+                    "endsPattern": ".*"
+                }
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "never",
+                "focus": false,
+                "panel": "shared"
+            }
+        }
+    ]
+}
