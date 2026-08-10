@@ -333,11 +333,11 @@ func music_layer_to(
 
 	_ensure_music_layer(layer)
 
-	var players: Array[AudioStreamPlayer] = _music_layers[layer]
+	var players: Array = _music_layers[layer]
 	var active_idx: int = int(_music_layer_active_idx.get(layer, 0))
-	var from_p := players[active_idx]
+	var from_p: AudioStreamPlayer = players[active_idx]
 	var to_idx := 1 - active_idx
-	var to_p := players[to_idx]
+	var to_p: AudioStreamPlayer = players[to_idx]
 
 	## Resolve bus for music layer (fallback to default_music_bus)
 	var bus_name := audio_set.bus_name
@@ -396,9 +396,9 @@ func music_layer_gain(
 	if not _music_layers.has(layer):
 		return
 
-	var players: Array[AudioStreamPlayer] = _music_layers[layer]
+	var players: Array = _music_layers[layer]
 	var active_idx: int = int(_music_layer_active_idx.get(layer, 0))
-	var p := players[active_idx]
+	var p: AudioStreamPlayer = players[active_idx]
 
 	if not p.playing:
 		return
@@ -417,9 +417,9 @@ func music_layer_stop(layer: StringName, fade_sec: float = -1.0) -> void:
 	if not _music_layers.has(layer):
 		return
 
-	var players: Array[AudioStreamPlayer] = _music_layers[layer]
+	var players: Array = _music_layers[layer]
 	var active_idx: int = int(_music_layer_active_idx.get(layer, 0))
-	var p := players[active_idx]
+	var p: AudioStreamPlayer = players[active_idx]
 
 	if not p.playing:
 		return
