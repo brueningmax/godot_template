@@ -72,6 +72,31 @@ var hum := Audio.play_follow(&"amb.machine_hum", self)
 
 Follow emitters are attached to the owner node and aren't pooled, because they map 1:1 to world objects.
 
+## Playing a resource directly (scene-local sounds)
+
+Sounds that belong to one scene don't need a registry. Keep the files in the scene's folder and pass the resource:
+
+```gdscript
+const HOWL := preload("howl.ogg")          # path relative to this script
+@export var bite_sounds: AudioSet          # an AudioSet .tres next to the scene
+
+Audio.play_sound(HOWL)                     # 2D one-shot
+Audio.play_sound_at(HOWL, global_position) # 3D one-shot
+Audio.play_sound_follow(HOWL, self)        # follows a Node3D, returns the player
+Audio.play_sound(bite_sounds)              # random variation from the set
+Audio.play_sound(HOWL, -3.0, &"Ambient")   # dB offset and bus override
+```
+
+| Argument type | Behaviour |
+| --- | --- |
+| `AudioStream` | Played as-is. Bus `SFX`. |
+| `AudioCue` | Uses the cue's volume trim, pitch and random pitch. Bus `SFX`. |
+| `AudioSet` | Picks a variation (no immediate repeats). Uses the set's bus. |
+
+The last argument `bus` overrides the bus in all three cases. Direct sounds go through the same voice pools and limits as ID-based ones. `play_sound_follow` reuses one player per owner and resource, so calling it again doesn't stack players.
+
+**Choosing between them:** use IDs for sounds shared across the game (UI, footsteps, music), where one place to retune or replace them is valuable. Use direct references for sounds owned by one scene, so the scene folder is self-contained and can be moved or copied as a unit.
+
 ## Layered music
 
 A *layer* is a named channel (`bed`, `base`, `drums`). Each layer has two internal players, so switching tracks crossfades within the layer.

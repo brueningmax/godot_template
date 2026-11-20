@@ -128,14 +128,40 @@ Audio.play_at(&"sfx.explosion", global_position)
 Audio.music_layer_to(&"base", &"music.flow.base", 1.5)
 ```
 
-An ID is `<registry namespace>.<set id>`, plus `.<cue id>` to address a single named variation. Registries are `.tres` files in `resources/audio/audioRegistries/`. To use one, add it to the `registries` array on `audio_manager_node.tscn`.
+There are two ways to refer to a sound.
+
+**By ID:** for shared sounds used in many places (UI clicks, footsteps). An ID is `<registry namespace>.<set id>`, plus `.<cue id>` to address a single named variation. Registries are `.tres` files in `resources/audio/audioRegistries/`. To use one, add it to the `registries` array on `audio_manager_node.tscn`.
+
+**By direct reference:** for sounds that belong to one scene. Keep the files next to the scene and play the resource itself, with no registry entry:
+
+```
+scenes/enemies/wolf/
+  wolf.tscn
+  wolf.gd
+  howl.ogg
+  bites.tres      # optional AudioSet with several bite variations
+```
+
+```gdscript
+# wolf.gd
+const HOWL := preload("howl.ogg")       # relative to this script
+@export var bite_sounds: AudioSet       # or assign in the inspector
+
+func howl() -> void:
+	Audio.play_sound_at(HOWL, global_position)
+
+func bite() -> void:
+	Audio.play_sound(bite_sounds)       # picks a random variation
+```
+
+`play_sound`, `play_sound_at` and `play_sound_follow` accept an `AudioStream`, an `AudioCue` (adds volume, pitch and random-pitch settings) or an `AudioSet` (random variations). The bus is the set's bus, or `SFX` for streams and cues. You can override it with the last `bus` argument. Direct sounds share the same voice pools and limits as ID-based sounds.
 
 Gotchas:
 
-- Unknown IDs only log a warning, so a typo plays silence.
+- Unknown IDs only log a warning, so a typo plays silence. A direct reference can't have that problem: a wrong `preload()` path fails when the script is parsed.
 - Bus names are plain strings and must match `resources/audio/bus_layout.tres` exactly (`UI`, `SFX`, `Ambient`, `Music`).
-
-> Known issue: the autoload references two missing registries, which logs errors on every launch. Tracked in [#1](https://github.com/brueningmax/godot_template/issues/1).
+- **Removing a registry:** delete it from the `registries` array on `audio_manager_node.tscn` **before** deleting the `.tres`. Otherwise the autoload logs load errors on every start.
+- 3D playback uses `Vector3` / `Node3D`. There's no 2D positional (`AudioStreamPlayer2D`) variant yet.
 
 ## Menus and UI
 
