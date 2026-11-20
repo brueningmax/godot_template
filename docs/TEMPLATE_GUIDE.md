@@ -418,7 +418,50 @@ If you override `before_all()`, `after_all()` or `after_each()` in a `TemplateTe
 
 ## CI and releases
 
-> Planned: lint and format in [#7](https://github.com/brueningmax/godot_template/issues/7), CI in [#9](https://github.com/brueningmax/godot_template/issues/9), exports and releases in [#10](https://github.com/brueningmax/godot_template/issues/10).
+### What CI checks
+
+`.github/workflows/ci.yml` runs on every pull request and on every push to `main`. It installs gdtoolkit and Godot (cached between runs) and then runs **`tools/check.sh`**, which runs these steps in order and stops at the first failure:
+
+| Step | Fails when |
+| --- | --- |
+| `gdformat --check .` | a script isn't formatted (fix: `gdformat .`) |
+| `gdlint .` | a lint rule is broken |
+| Import (`--import`) | the import log has `ERROR:` / `SCRIPT ERROR:` lines (missing files, broken references) |
+| `tools/check_scripts.gd` | a script doesn't compile |
+| Smoke run: full game | the boot → splash → main menu run logs an error |
+| Smoke run: `hello_world.tscn` | running that scene on its own logs an error |
+| Tests (GUT) | any test fails |
+
+**Why the log scanning:** Godot exits with code 0 even when scenes or resources fail to load. The problems only appear as `ERROR:` lines in its output. `tools/check.sh` therefore scans the logs instead of trusting the exit code.
+
+The smoke runs use `--fixed-fps 60`, so "N frames" means a fixed amount of game time. Headless Godot would otherwise run frames as fast as it can, and finish before the 2-second splash is over.
+
+Logs and a JUnit test report (`junit.xml`) end up in `.godot/check-logs/`, which CI uploads as the **check-logs** artifact of each run.
+
+### Running the same checks locally
+
+```bash
+pip install -r requirements-dev.txt
+```
+```bash
+tools/check.sh
+```
+```bash
+GODOT=/path/to/godot tools/check.sh
+```
+
+The last form is for when `godot` isn't on your PATH. It works on Linux and macOS, and on Windows in Git Bash. A full run takes about 20 seconds.
+
+### Bumping the Godot version
+
+The version is pinned in several places that must agree:
+
+1. `GODOT_VERSION` in `.github/workflows/ci.yml`.
+2. `config/features` in `project.godot` (Godot updates it when you open the project in the new editor).
+3. **GUT:** replace `addons/gut/` with the GUT release built for that Godot version (GUT's README has a table).
+4. If you use a cloud dev environment, the Godot version in its setup script.
+
+> Planned: exports and releases in [#10](https://github.com/brueningmax/godot_template/issues/10).
 
 ## Conventions
 

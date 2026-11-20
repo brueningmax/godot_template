@@ -39,6 +39,8 @@ godot --headless -s addons/gut/gut_cmdln.gd
 
 59 automated tests (GUT) cover the template's systems. See [Testing](docs/TEMPLATE_GUIDE.md#testing).
 
+`tools/check.sh` runs everything CI runs (format, lint, import, script compile, smoke runs, tests). See [CI](docs/TEMPLATE_GUIDE.md#ci-and-releases).
+
 ## Project layout
 
 ```
