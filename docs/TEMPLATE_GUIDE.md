@@ -82,7 +82,7 @@ Always use this typed form, never `connect("name", ...)` or `emit_signal("name")
 
 **Lifetime:** when a node is freed, Godot removes connections to its **methods** automatically, so `SignalBus.x.connect(_on_x)` needs no cleanup. **Lambdas are different.** A lambda stays connected until the object that *created* it is freed. If it only *captures* a node that is later freed, the next emit errors with "Lambda capture … was freed". From nodes that can be freed, connect methods, or disconnect lambdas in `_exit_tree()`.
 
-**Trap: keep `signalBus.gd` free of references to `SceneRegistry` or game classes.** `SignalBus` is the first autoload, so whatever it references is compiled before the other autoloads exist. `SceneRegistry` `preload()`s every scene, so referencing it would compile every scene script too early, and they'd all fail with "Identifier not found: Audio" etc. That's why scene keys on the bus are typed as `int`.
+**Trap: only `SceneManager` may read `SceneRegistry.SCENES`.** `SCENES` `preload()`s every registered scene, and those scenes' scripts use the autoloads. If an autoload or a scene script reads `SCENES`, Godot sees a cycle and every affected script fails with "Could not resolve member \"SCENES\": Cyclic reference". Using the enum (`SceneRegistry.SceneKey.MainMenu`) is fine anywhere. ([#22](https://github.com/brueningmax/godot_template/issues/22) removes the cause by storing paths instead of preloads.)
 
 ## SettingsManager
 

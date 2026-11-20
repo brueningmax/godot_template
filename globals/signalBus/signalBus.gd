@@ -5,9 +5,9 @@ extends Node
 ##   SignalBus.scene_change_finished.connect(_on_scene_change_finished)
 ##   SignalBus.pause_toggled.emit(true)
 ##
-## Keep this script free of references to SceneRegistry or game classes.
-## SignalBus is the first autoload: anything it references is compiled before
-## the other autoloads exist. That's why scene keys below are plain ints.
+## Never read SceneRegistry.SCENES from here (or from any script a registered
+## scene depends on): it preloads every scene, which creates a cyclic
+## reference. SceneRegistry.SceneKey is fine; keys below are ints for brevity.
 
 # --- Scenes -----------------------------------------------------------------
 
