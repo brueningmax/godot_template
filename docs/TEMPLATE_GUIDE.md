@@ -487,12 +487,51 @@ The last form is for when `godot` isn't on your PATH. It works on Linux and macO
 
 The version is pinned in several places that must agree:
 
-1. `GODOT_VERSION` in `.github/workflows/ci.yml`.
+1. `GODOT_VERSION` in `.github/workflows/ci.yml` **and** `.github/workflows/release.yml`.
 2. `config/features` in `project.godot` (Godot updates it when you open the project in the new editor).
 3. **GUT:** replace `addons/gut/` with the GUT release built for that Godot version (GUT's README has a table).
 4. If you use a cloud dev environment, the Godot version in its setup script.
 
-> Planned: exports and releases in [#10](https://github.com/brueningmax/godot_template/issues/10).
+### Exporting and releases
+
+`export_presets.cfg` has three release presets. All of them export to `build/` (git-ignored):
+
+| Preset | Output | Notes |
+| --- | --- | --- |
+| **Windows Desktop** | `build/windows/<name>.exe` + `.pck` | x86_64. The `.exe` keeps Godot's icon and version info (`application/modify_resources` is off, so no `rcedit` is needed). To brand it, install `rcedit`, set its path in Editor Settings → Export → Windows, and turn the option on. |
+| **Linux** | `build/linux/<name>.x86_64` + `.pck` | x86_64. |
+| **Web** | `build/web/index.html` + `.js`/`.wasm`/`.pck` | **No threads** (`variant/thread_support=false`), so it runs on any static host: GitHub Pages, itch.io. Threaded web builds need COOP/COEP headers, which those hosts don't send by default. |
+
+`<name>` is `config/name` in lowercase with dashes, e.g. `my-deckbuilder`.
+
+**Excluded from every build:** `addons/gut/*`, `test/*`, `tools/*`, `docs/*`. The test framework and dev tools never ship. A packed build is about 200 KB, compared to 2.5 MB for GUT alone. Keep the filter when you add presets.
+
+**Export templates** are needed once per Godot version: in the editor, **Editor → Manage Export Templates → Download and Install**. On the command line, extract the `templates/` folder of `Godot_v<version>_export_templates.tpz` into `~/.local/share/godot/export_templates/<version>/` (Linux), `%APPDATA%\Godot\export_templates\<version>\` (Windows) or `~/Library/Application Support/Godot/export_templates/<version>/` (macOS). `<version>` is the content of its `version.txt`, e.g. `4.7.stable`.
+
+**Exporting from the command line:**
+
+```bash
+tools/export.sh
+```
+```bash
+tools/export.sh Linux Web
+```
+
+This exports every preset (or only the named ones), zips each as `build/<name>-<platform>.zip`, and fails on export errors. Godot exits 0 even when an export has errors, so the script scans the logs.
+
+**Cutting a release:** push a version tag.
+
+```bash
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+`.github/workflows/release.yml` then runs all checks, exports the three presets and creates a **GitHub Release** for the tag, with generated notes and the three zips attached. Godot and the three needed templates are cached per version; the full template bundle is about 1.3 GB.
+
+**Adding a platform:**
+
+- **macOS** needs a signing identity and notarization (an Apple developer account), so it isn't preset. Add it in the editor (**Project → Export → Add → macOS**), put signing secrets in `export_credentials.cfg` (git-ignored), and add the template file to `release.yml`'s extract list.
+- **Android** needs the Android SDK, a keystore and the Android build template.
+- In every case, add the new preset's name to the `case` in `tools/export.sh`.
 
 ## Conventions
 

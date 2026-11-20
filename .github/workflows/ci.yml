@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # The one place the CI Godot version is pinned. Keep it in sync with the
-  # Godot version in project.godot and the GUT build in addons/gut.
+  # Keep in sync with GODOT_VERSION in release.yml, the Godot version in
+  # project.godot and the GUT build in addons/gut.
   GODOT_VERSION: 4.7-stable
 
 jobs:

@@ -26,7 +26,7 @@ var bus_name: StringName = &"SFX"
 
 ## Builds a dynamic dropdown for `bus_name` based on the current AudioServer buses.
 ## This runs in the editor because the script is marked with @tool.
-func _get_property_list() -> Array:
+func _get_property_list() -> Array[Dictionary]:
 	var bus_names: PackedStringArray = []
 	for i in range(AudioServer.bus_count):
 		bus_names.append(AudioServer.get_bus_name(i))
@@ -36,7 +36,7 @@ func _get_property_list() -> Array:
 	if hint.is_empty():
 		hint = "Master"
 
-	return [
+	var props: Array[Dictionary] = [
 		{
 			"name": "bus_name",
 			"type": TYPE_STRING_NAME,
@@ -45,6 +45,7 @@ func _get_property_list() -> Array:
 			"usage": PROPERTY_USAGE_DEFAULT
 		}
 	]
+	return props
 
 
 func _get(property: StringName):
