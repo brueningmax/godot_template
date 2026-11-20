@@ -24,9 +24,25 @@ How the template's systems work, how to use them, and what isn't obvious from th
 
 ## Overview and boot flow
 
-The main scene (`run/main_scene`) is `globals/sceneManager/Main.tscn`, an empty node. Scenes do **not** replace it. `SceneManager` instances them as children of its own `SceneHolder` node (see [SceneManager](#scenemanager-and-sceneregistry)).
+```
+F5 / exported game                        F6 / "run current scene"
+──────────────────                        ────────────────────────
+autoloads _ready()                        autoloads _ready()
+Main.tscn (boot.gd)                       your scene, on its own
+  ├─ show_splash? ─ yes ─► SplashScreen     (no boot, no menu, no redirect)
+  │                          │ (timer or any input)
+  └────── no ───────────────►┴► start_scene (MainMenu)
+                                 └─ Play ─► GameScene (hello_world)
+```
 
-> Planned: an explicit boot sequence (splash → main menu) is tracked in [#3](https://github.com/brueningmax/godot_template/issues/3).
+- **Full game (F5):** the main scene `globals/sceneManager/Main.tscn` runs `boot.gd`, which hands over to `SceneManager` and then removes itself. Change the start flow by selecting the root node of `Main.tscn` and editing its exports:
+  - `start_scene`: which `SceneKey` to start in, e.g. `GameScene` to skip the menu while developing.
+  - `show_splash`, `splash_scene`, `splash_time`.
+- **Single scene (F6):** `Main.tscn` never loads, so the boot flow never runs, and the `SceneManager` autoload doesn't do anything on its own. Your scene runs exactly as it is. If it calls `SceneManager.change_scene()`, for example "back to menu", the manager takes the running scene over and replaces it normally.
+
+**Rule:** never put start-up navigation in an autoload's `_ready()`. Autoloads also run for F6, so it would redirect every scene you try to debug. Start-up navigation belongs in `boot.gd`.
+
+The **hello-world scene** (`scenes/game/hello_world/`) is a placeholder game showing input actions, an RNG stream, `Audio` and `SceneManager` in about 60 lines. Replace it with your game by pointing `SceneKey.GameScene` at your scene in `scene_registry.gd`.
 
 ## Autoloads
 
@@ -122,11 +138,13 @@ SceneManager.change_scene(SceneRegistry.SceneKey.GameScene, {"level": 2}, true) 
 SceneManager.change_scene_with_screen(SceneRegistry.SceneKey.MainMenu, SceneRegistry.SceneKey.SplashScreen, 2.0)
 ```
 
-To add a scene, add a value to `SceneKey` and an entry in `SCENES` in `scene_registry.gd`.
+To add a scene, add a value to `SceneKey` and an entry in `SCENES` in `scene_registry.gd`. Add new keys at the **end** of the enum: exported `SceneKey` values, e.g. `start_scene` on `Main.tscn`, are stored as numbers, so inserting a key in the middle shifts them.
+
+**Intermediate screens** (splash, "chapter 2" cards) are shown by `change_scene_with_screen()` for `screen_time` seconds. To make a screen skippable, give its root script a `signal skipped` and emit it, e.g. on any input. The manager listens from the moment the screen is added, so a skip during its fade-in also counts. `scenes/ui/splash_screen/splash_screen.gd` is the example.
 
 Non-obvious behaviour:
 
-- **Don't use `get_tree().change_scene_to_file()`.** The manager keeps the active scene under `/root/SceneManager/SceneHolder`, and `get_tree().current_scene` stays the empty `Main` node. Use `SceneManager.current_scene` to get the active scene.
+- **Don't use `get_tree().change_scene_to_file()`.** The manager keeps the active scene under `/root/SceneManager/SceneHolder`, and `get_tree().current_scene` is empty after boot. Use `SceneManager.current_scene` to get the active scene. (When you run a scene with F6, it is the tree's current scene until the first `change_scene()` takes it over.)
 - **Calls during a transition are silently ignored**, because of the `_changing` flag. You don't get an error.
 - **Payloads:** if the new scene has an `apply_payload(payload: Dictionary)` method, it's called **deferred**, after the scene's `_ready()`. Don't read payload data in `_ready()`.
 - Intermediate screens (splash, loading) are added to the manager's `Overlay` CanvasLayer (layer 100), above the game.
