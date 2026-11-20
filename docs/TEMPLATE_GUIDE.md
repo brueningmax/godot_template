@@ -182,10 +182,18 @@ Gotchas:
 ## Menus and UI
 
 - **`MenuBase`** (`scenes/ui/Menus/menu_base.gd`): base class for menus. `open()` / `close()` fade the menu in and out, and the tweens keep running while the game is paused. Set `default_focus` so keyboard and controller users land on a control. Override `_on_open()` / `_on_close()` for menu-specific behaviour.
-- **`UIButton`** (`scenes/ui/components/ui_button/`): a `Button` wrapper with a hover lift and `ui.hover` / `ui.click` sounds through `Audio`. Set its label with the `text` property. Listen to its `pressed` signal, not the inner button's.
-  - Gotcha: the `hover_sound` / `click_sound` exports are currently unused, because sounds come from `Audio`. Its `button_down` / `button_up` signals never fire, since they wait for a player that never plays.
+- **`UIButton`** (`scenes/ui/components/ui_button/`): a `Button` wrapper with a hover lift and `ui.hover` / `ui.click` sounds through `Audio`. Set its label with the `text` property. Listen to the wrapper's `pressed` / `button_down` / `button_up` signals, not the inner button's. Hover also triggers on keyboard/controller focus, so focusing a button plays `ui.hover`.
 
-> Planned: dead menu code is tracked in [#2](https://github.com/brueningmax/godot_template/issues/2), the global pause and menu state in [#23](https://github.com/brueningmax/godot_template/issues/23), and controller support in [#16](https://github.com/brueningmax/godot_template/issues/16).
+**Making a new menu:**
+
+1. Create a `Control` scene and attach a script that `extends MenuBase`.
+2. Expose user actions as signals (`signal resume_pressed`) instead of acting directly. Whoever opens the menu decides what they do, so the same menu works from the main menu and in-game.
+3. Set `default_focus` in `_ready()` (e.g. `default_focus = btn_resume.get_path()`).
+4. Call `open()` / `close()` rather than toggling `visible`, so the fade and focus run.
+
+`PauseMenu` and `SettingsMenu` follow this pattern but aren't opened anywhere yet. Wiring is tracked in [#4](https://github.com/brueningmax/godot_template/issues/4) (settings) and [#23](https://github.com/brueningmax/godot_template/issues/23) (pause and global state).
+
+> Planned: controller support in [#16](https://github.com/brueningmax/godot_template/issues/16).
 
 ## Debug tools
 
@@ -194,6 +202,16 @@ Gotchas:
 Gotcha: previewing **instantiates** the scene, so its `_ready()` runs, along with any side effects (sounds, autoload calls, changing the mouse mode).
 
 > Planned: a debug overlay and console are tracked in [#20](https://github.com/brueningmax/godot_template/issues/20), and logging in [#19](https://github.com/brueningmax/godot_template/issues/19).
+
+### Script checker
+
+`tools/check_scripts.gd` compiles every `.gd` file in the project (skipping `addons/`) and lists the ones that fail. Its exit code is the number of failures:
+
+```bash
+godot --headless --script res://tools/check_scripts.gd
+```
+
+Use it instead of `godot --check-only --script file.gd`. That mode doesn't create the autoloads, so every script that uses `SignalBus`, `Audio`, etc. reports a false "Identifier not found" error.
 
 ## Debugging in VS Code
 

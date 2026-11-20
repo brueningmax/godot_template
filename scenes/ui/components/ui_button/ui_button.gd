@@ -8,10 +8,6 @@ signal button_up
 @export var hover_offset := -4.0
 @export var anim_duration := 0.12
 
-@export var hover_sound: AudioStream
-@export var click_sound: AudioStream
-
-
 @export var text: String:
 	set(value):
 		$Button.text = value
@@ -19,8 +15,6 @@ signal button_up
 		return $Button.text
 
 @onready var btn: Button = $Button
-@onready var hover_player: AudioStreamPlayer = $HoverPlayer
-@onready var click_player: AudioStreamPlayer = $ClickPlayer
 
 var base_pos := Vector2.ZERO
 
@@ -58,23 +52,11 @@ func _on_pressed() -> void:
 	var t = create_tween()
 	t.tween_property(btn, "position:y", base_pos.y + 2, 0.06)
 	t.tween_property(btn, "position:y", base_pos.y + hover_offset, 0.08)
-	emit_signal("pressed")
+	pressed.emit()
 
 func _on_button_down() -> void:
-	await click_player.finished
-	emit_signal("button_down")
+	button_down.emit()
+
 
 func _on_button_up() -> void:
-	await click_player.finished
-	emit_signal("button_up")
-
-func _play_hover() -> void:
-	if hover_sound:
-		hover_player.stream = hover_sound
-		hover_player.play()
-
-
-func _play_click() -> void:
-	if click_sound:
-		click_player.stream = click_sound
-		click_player.play()
+	button_up.emit()
