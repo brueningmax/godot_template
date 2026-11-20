@@ -24,6 +24,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+        with:
+          lfs: true  # no effect unless the game enables Git LFS
 
       - uses: actions/setup-python@v7
         with:

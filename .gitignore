@@ -1,3 +1,35 @@
-# Godot 4+ specific ignores
+# --- Godot ---------------------------------------------------------------
 .godot/
 /android/
+# Generated from the CSV/PO sources; Godot recreates them on import.
+*.translation
+# Export signing keys and passwords. Never commit.
+export_credentials.cfg
+
+# --- Builds (export output) -------------------------------------------------
+/build/
+
+# --- .NET / C# ---------------------------------------------------------------
+# (Godot 4 keeps C# build output in .godot/mono, already ignored above.)
+mono_crash.*.json
+
+# --- OS clutter ------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+
+# --- Editors -----------------------------------------------------------------
+# Only the shared VS Code files are committed; personal ones stay local.
+.vscode/*
+!.vscode/launch.json
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/tasks.json
+.idea/
+*.swp
+
+# --- Python dev tools (gdtoolkit, pre-commit) ------------------------------
+__pycache__/
+.venv/
+venv/

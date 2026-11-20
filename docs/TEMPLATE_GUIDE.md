@@ -517,4 +517,39 @@ The second command enables the per-commit hooks. The third is optional: it also 
 - **Updating gdtoolkit:** change the version in **both** `requirements-dev.txt` and `rev:` in `.pre-commit-config.yaml`. `tools/check.sh` (and so CI) fails if the two differ.
 - **Windows:** commit from a terminal where Python and `pre-commit` are on `PATH`. A GUI client that can't find them reports the hook as failed.
 
+### Repository hygiene
+
+`.gitignore` is grouped and commented. In short, Git ignores:
+
+- **Godot:** the `.godot/` cache, generated `*.translation` files, and `export_credentials.cfg` (export signing keys and passwords, which must never be committed).
+- **Builds:** `/build/`, where exports go.
+- **OS and editor clutter:** `.DS_Store`, `Thumbs.db`, `.idea/`, swap files, and everything in `.vscode/` **except** the four shared files (`launch.json`, `settings.json`, `extensions.json`, `tasks.json`).
+- **Python dev tools:** `__pycache__/`, `.venv/`.
+
+Commit `*.import` and `*.uid` files: Godot needs them to keep resource IDs and import settings stable for everyone.
+
+`.gitattributes` normalises text files to LF line endings and marks images, audio, fonts and models as **binary**, so Git never diffs them or converts their line endings.
+
+### Enabling Git LFS in your game
+
+[Git LFS](https://git-lfs.com) stores large binary files (music, textures, models) outside the normal Git history. The repository holds small pointer files, and each checkout downloads only the versions it needs. The template doesn't enable it, since its assets are about 100 KB. Turn it on in a game once real assets start arriving. Early is easier than late.
+
+1. Install Git LFS once per machine: `git lfs install`.
+2. In `.gitattributes`, uncomment the lines in the Git LFS block (or run the command below), then commit `.gitattributes`.
+   ```bash
+   sed -i -E 's/^# (\*\.[a-z0-9]+ filter=lfs .*)$/\1/' .gitattributes
+   ```
+3. Move assets that are already committed into LFS. **This rewrites history.** Do it before others clone, or coordinate a re-clone:
+   ```bash
+   git lfs migrate import --everything --include="*.png,*.jpg,*.webp,*.exr,*.psd,*.kra,*.aseprite,*.ogg,*.wav,*.mp3,*.glb,*.blend,*.fbx"
+   ```
+   Then push with `git push --force-with-lease`.
+4. Check: `git lfs ls-files` lists the tracked files.
+
+Good to know:
+
+- Everyone who clones needs Git LFS installed. Without it they get pointer files instead of assets, and Godot reports import errors (CI's import step would catch that).
+- CI already checks out with `lfs: true`.
+- GitHub limits free LFS storage and download bandwidth. Check your plan's quota if the project has many large assets or CI runs.
+
 > Planned: folder and file naming, contribution flow: [#14](https://github.com/brueningmax/godot_template/issues/14).
