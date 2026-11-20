@@ -22,14 +22,10 @@ There are also menus (main, pause, settings), a reusable `UIButton`, and a debug
 
 ## Quick start
 
-**New project from the template (Windows):**
+1. On GitHub, click **Use this template → Create a new repository**. A one-time workflow names the project after your repository and replaces this README, in one commit.
+2. Clone your new repository, open `project.godot` in Godot 4.7, and press **F5**.
 
-1. Copy `setup.bat` into an empty folder and run it.
-2. Enter your project name. The script pulls the template, starts a fresh Git history and replaces every `godot_game_template` reference with your project name.
-
-**Already cloned or copied the files:** run `rename.bat` in the project folder to do only the renaming.
-
-Then open `project.godot` in Godot 4.7 and press **F5**.
+Not using GitHub, or want a different name? See [Starting a new game](docs/TEMPLATE_GUIDE.md#starting-a-new-game-from-the-template).
 
 ## Tests
 

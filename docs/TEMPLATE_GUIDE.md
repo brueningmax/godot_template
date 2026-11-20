@@ -6,6 +6,7 @@ How the template's systems work, how to use them, and what isn't obvious from th
 
 ## Contents
 
+0. [Starting a new game from the template](#starting-a-new-game-from-the-template)
 1. [Overview and boot flow](#overview-and-boot-flow)
 2. [Autoloads](#autoloads)
 3. [SignalBus](#signalbus)
@@ -22,6 +23,35 @@ How the template's systems work, how to use them, and what isn't obvious from th
 13. [Conventions](#conventions)
 
 ---
+
+## Starting a new game from the template
+
+### With GitHub ("Use this template")
+
+1. On the template's GitHub page, click **Use this template → Create a new repository**.
+2. The new repository's first push runs `.github/workflows/template-setup.yml` once:
+   - sets `config/name` in `project.godot` to the repository name (e.g. `my-deckbuilder`)
+   - replaces the template README with a short stub
+   - commits both as **"Set up project from template"**
+3. Pull that commit, then open the project in Godot.
+
+The workflow does nothing on later pushes: it only acts while `project.godot` still has the template's name. You can delete the file afterwards. It can't delete itself, because GitHub's built-in token isn't allowed to change workflow files. It never runs in the template repository itself or in forks.
+
+### Without GitHub (or to choose a different name)
+
+```bash
+git clone --depth 1 https://github.com/brueningmax/godot_template.git my-game
+```
+```bash
+cd my-game && rm -rf .git && git init
+```
+```bash
+godot --headless --script res://tools/rename_project.gd -- "My Game"
+```
+
+The last command is the cross-platform rename tool. It works on Windows too (`godot` being your Godot executable), and you can rerun it any time to rename a project. It changes only the `config/name` line of `project.godot`.
+
+**Rename before the first real run.** The project name also decides the **user data folder** that `user://` points to, which holds settings, saves and logs. Renaming later starts the game with empty user data, because the old folder keeps the old name. After renaming, delete the `.godot/` folder (editor cache) and reopen the project.
 
 ## Overview and boot flow
 

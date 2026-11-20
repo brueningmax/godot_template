@@ -1,0 +1,70 @@
+# One-time setup for repositories created with "Use this template".
+#
+# On the first push to main in a NEW repository (never in the template
+# itself, never in forks), it names the project after the repository and
+# replaces the template README with a short stub, in one commit.
+#
+# After that commit, project.godot no longer has the template's name, so this
+# workflow does nothing on later pushes. Delete this file whenever you like.
+# (It can't delete itself: the built-in GITHUB_TOKEN may not modify workflow
+# files.)
+name: Template setup
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  setup:
+    if: github.repository != 'brueningmax/godot_template' && !github.event.repository.fork
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check whether the project still has the template's name
+        id: check
+        run: |
+          if grep -q '^config/name="godot_game_template"$' project.godot; then
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Project already set up; nothing to do."
+          fi
+
+      - name: Name the project after the repository
+        if: steps.check.outputs.needed == 'true'
+        env:
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          # Repository names only contain letters, digits, '.', '-' and '_',
+          # so they're safe inside the quoted value. To pick another name
+          # later, run tools/rename_project.gd.
+          sed -i "s/^config\/name=\"godot_game_template\"$/config\/name=\"${REPO_NAME}\"/" project.godot
+          grep '^config/name=' project.godot
+
+      - name: Replace the template README
+        if: steps.check.outputs.needed == 'true'
+        env:
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          cat > README.md <<README
+          # ${REPO_NAME}
+
+          A Godot 4.7 game, created from [godot_template](https://github.com/brueningmax/godot_template).
+
+          - How the template's systems work: [docs/TEMPLATE_GUIDE.md](docs/TEMPLATE_GUIDE.md)
+          - Run all checks (format, lint, import, tests): \`tools/check.sh\`
+          README
+          cat README.md
+
+      - name: Commit
+        if: steps.check.outputs.needed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add project.godot README.md
+          git commit -m "Set up project from template"
+          git push
