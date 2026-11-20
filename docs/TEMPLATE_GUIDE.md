@@ -90,9 +90,25 @@ Everything derives from one human-readable `seed_string`. There are two ways to 
 
 Use a separate stream per system (`"loot"`, `"map"`, `"ai"`), so adding a roll in one system doesn't shift every other system's results. Use keyed values for things that must not depend on order, e.g. "what's in chest 3", whichever chest is opened first.
 
+**Seeding:**
+
+```gdscript
+RngManager.set_seed(seed_input.text)   # empty or whitespace -> random seed
+var shown: String = RngManager.get_seed()  # e.g. "3FA9C01E": display it, save it
+```
+
+A random seed is also picked at startup, so randomness always works, even if nothing sets a seed. Generated seeds are 8 hex characters, so players can read them out in bug reports. Any text works as a seed.
+
 `set_seed()` clears all cached streams. Streams fetched before the call keep their old state, so fetch streams again after reseeding instead of caching them across a reseed.
 
-> **Known bugs ([#26](https://github.com/brueningmax/godot_template/issues/26)):** `set_seed("")` does not randomize, `keyed_float_01()` always returns about 0, and `get_seeded_stream_for()` includes the object's instance ID, so it isn't stable across runs. Until that issue is closed, use `get_stream(key)` with your own stable key.
+**Per-object streams:**
+
+| API | Key | Use for |
+| --- | --- | --- |
+| `get_seeded_stream_for(obj, stable_id)` | the object's class/script + `stable_id` | Reproducible per-entity randomness, e.g. `stable_id = "chunk:42:enemy:3"`. Two objects of the same type with the same `stable_id` share one stream. |
+| `get_unstable_stream_for(obj)` | the object's instance ID | Independent randomness per copy, where reproducing a run doesn't matter. Not stable across runs. |
+
+All values are derived with 32-bit FNV-1a hashing of `seed + "|" + key`, so a given seed produces the same results on every platform.
 
 ## SceneManager and SceneRegistry
 
