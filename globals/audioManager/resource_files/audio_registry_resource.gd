@@ -6,8 +6,7 @@ class_name AudioRegistry
 ## Namespace prefix for all audio sets in this registry.
 ## Used to build fully-qualified audio IDs like:
 ##   "move.step", "ui.click", "amb.wind"
-@export var name_space: StringName # e.g. "move", "ui", "amb"
-
+@export var name_space: StringName  # e.g. "move", "ui", "amb"
 
 @export_category("Content")
 
@@ -15,8 +14,8 @@ class_name AudioRegistry
 ## Each AudioSet contributes one or more playable sound variations.
 @export var audio_sets: Array[AudioSet] = []
 
-
 @export_category("Runtime")
+
 
 ## Builds a lookup table mapping full audio IDs to AudioSet resources.
 ## Called by the AudioManager during startup.

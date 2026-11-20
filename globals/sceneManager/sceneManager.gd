@@ -21,6 +21,7 @@ var _screen_done_token := -1
 signal scene_changed(new_scene: Node)
 signal _screen_finished(token: int)
 
+
 func _ready() -> void:
 	holder.name = "SceneHolder"
 	add_child(holder)
@@ -38,10 +39,17 @@ func _ready() -> void:
 
 
 # Transition to a scene directly, with an optional fade.
-func change_scene(scene_key: SceneRegistry.SceneKey, payload: Dictionary = {}, use_fade: bool = false) -> void:
+func change_scene(
+	scene_key: SceneRegistry.SceneKey, payload: Dictionary = {}, use_fade: bool = false
+) -> void:
 	var packed: PackedScene = SceneRegistry.SCENES.get(scene_key)
 	if packed == null:
-		push_error("SceneManager: No scene registered for key: %s" % SceneRegistry.SceneKey.keys()[scene_key])
+		push_error(
+			(
+				"SceneManager: No scene registered for key: %s"
+				% SceneRegistry.SceneKey.keys()[scene_key]
+			)
+		)
 		return
 	await _change_to(packed, scene_key, payload, use_fade)
 
@@ -63,7 +71,8 @@ func is_changing() -> bool:
 
 
 func _change_to(packed: PackedScene, key: int, payload: Dictionary, use_fade: bool) -> void:
-	if _changing: return
+	if _changing:
+		return
 	_changing = true
 
 	SignalBus.scene_change_started.emit(key)
@@ -92,13 +101,24 @@ func _change_to(packed: PackedScene, key: int, payload: Dictionary, use_fade: bo
 
 
 # Transition to a scene with an intermediate screen (splash, loading, etc.).
-func change_scene_with_screen(next_key: SceneRegistry.SceneKey, screen_key: SceneRegistry.SceneKey, screen_time: float = DEFAULT_SCREEN_TIME, payload: Dictionary = {}) -> void:
-	if _changing: return
+func change_scene_with_screen(
+	next_key: SceneRegistry.SceneKey,
+	screen_key: SceneRegistry.SceneKey,
+	screen_time: float = DEFAULT_SCREEN_TIME,
+	payload: Dictionary = {}
+) -> void:
+	if _changing:
+		return
 	_changing = true
 
 	var next_packed: PackedScene = SceneRegistry.SCENES.get(next_key)
 	if next_packed == null:
-		push_error("SceneManager: No scene registered for key: %s" % SceneRegistry.SceneKey.keys()[next_key])
+		push_error(
+			(
+				"SceneManager: No scene registered for key: %s"
+				% SceneRegistry.SceneKey.keys()[next_key]
+			)
+		)
 		_changing = false
 		return
 
@@ -124,7 +144,12 @@ func change_scene_with_screen(next_key: SceneRegistry.SceneKey, screen_key: Scen
 	if screen_node:
 		await _fade_in(DEFAULT_FADE_DURATION)
 	else:
-		push_warning("SceneManager: No scene registered for screen key: %s — skipping screen." % SceneRegistry.SceneKey.keys()[screen_key])
+		push_warning(
+			(
+				"SceneManager: No scene registered for screen key: %s — skipping screen."
+				% SceneRegistry.SceneKey.keys()[screen_key]
+			)
+		)
 
 	await _wait_for_screen(token, screen_time)
 	await _fade_out(DEFAULT_FADE_DURATION)
@@ -146,10 +171,13 @@ func change_scene_with_screen(next_key: SceneRegistry.SceneKey, screen_key: Scen
 
 # Convenience: return to the main menu with a splash screen.
 func goto_menu() -> void:
-	await change_scene_with_screen(SceneRegistry.SceneKey.MainMenu, SceneRegistry.SceneKey.SplashScreen)
+	await change_scene_with_screen(
+		SceneRegistry.SceneKey.MainMenu, SceneRegistry.SceneKey.SplashScreen
+	)
 
 
 # --- Helpers ---
+
 
 # A scene started on its own (F6 / "run current scene") is the tree's
 # current_scene, outside our SceneHolder. Take ownership of it so the first
@@ -207,11 +235,13 @@ func _apply_payload(scene: Node, payload: Dictionary) -> void:
 	if not payload.is_empty() and scene.has_method("apply_payload"):
 		scene.call_deferred("apply_payload", payload)
 
+
 func _fade_out(dur: float) -> void:
 	fade_rect.visible = true
 	var t := create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	t.tween_property(fade_rect, "modulate:a", 1.0, dur)
 	await t.finished
+
 
 func _fade_in(dur: float) -> void:
 	var t := create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)

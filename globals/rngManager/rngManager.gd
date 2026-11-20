@@ -20,6 +20,7 @@ func _ready() -> void:
 
 # --- Public API -------------------------------------------------------------
 
+
 func randomize_seed() -> void:
 	set_seed(_generate_random_seed())
 
@@ -51,6 +52,7 @@ func get_stream(key: String) -> RngStream:
 	_streams[key] = stream
 	return stream
 
+
 func get_unstable_stream_for(call_owner: Object, stream_name: String = "") -> RngStream:
 	## Unique per instance *within a run*
 	## NOTE: not stable across runs → good for "independent randomness per copy",
@@ -62,7 +64,9 @@ func get_unstable_stream_for(call_owner: Object, stream_name: String = "") -> Rn
 	return get_stream(key)
 
 
-func get_seeded_stream_for(call_owner: Object, stable_id: String, stream_name: String = "") -> RngStream:
+func get_seeded_stream_for(
+	call_owner: Object, stable_id: String, stream_name: String = ""
+) -> RngStream:
 	## Deterministic across runs if stable_id is deterministic.
 	## Example stable_id: "chunk:42:enemy:3" or saved UUID.
 	## The key uses the owner's class/script, not its instance id, so two
@@ -80,18 +84,21 @@ func _owner_label(call_owner: Object) -> String:
 	var cls := call_owner.get_class()
 
 	# If it's a script with class_name, this will often be more descriptive
-	var script : Script = call_owner.get_script()
+	var script: Script = call_owner.get_script()
 	if script != null:
 		# Resource path is stable-ish and helps debugging
 		cls = "%s@%s" % [cls, str(script.resource_path)]
 
 	return cls
-	
+
+
 func reset_all_streams() -> void:
 	_streams.clear()
 
+
 # --- Order-independent randomness (keyed) ----------------------------------
 # Same seed + same key => same result, regardless of when/how often called.
+
 
 func keyed_u32(key: String) -> int:
 	return _fnv1a_32(seed_string + "|" + key)
@@ -117,6 +124,7 @@ func keyed_int_range(key: String, min_val: int, max_val: int) -> int:
 
 # --- Internals --------------------------------------------------------------
 
+
 func _generate_random_seed() -> String:
 	# Short and easy to read out or type back in, e.g. "3FA9C01E".
 	# Uses the engine's global RNG, which Godot seeds randomly at startup.
@@ -125,7 +133,7 @@ func _generate_random_seed() -> String:
 
 func _fnv1a_32(s: String) -> int:
 	var data: PackedByteArray = s.to_utf8_buffer()
-	var hash_int: int = 2166136261 # 0x811C9DC5
+	var hash_int: int = 2166136261  # 0x811C9DC5
 	var prime: int = 16777619  # 0x01000193
 
 	for b in data:

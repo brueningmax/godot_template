@@ -4,6 +4,7 @@ class_name MenuBase
 @export var default_focus: NodePath
 var _tween: Tween
 
+
 func open() -> void:
 	# Stop a running close() fade, or its callback would hide us again.
 	if _tween and _tween.is_running():
@@ -17,6 +18,7 @@ func open() -> void:
 		_on_open()
 	call_deferred("grab_default_focus")
 
+
 func close() -> void:
 	if _tween and _tween.is_running():
 		_tween.kill()
@@ -26,6 +28,7 @@ func close() -> void:
 	_tween.tween_callback(func(): visible = false)
 	if has_method("_on_close"):
 		_on_close()
+
 
 func grab_default_focus() -> void:
 	if default_focus == NodePath():
@@ -47,8 +50,10 @@ func _first_focusable(node: Node) -> Control:
 				return found
 	return null
 
+
 func _on_open() -> void:
 	pass
-	
+
+
 func _on_close() -> void:
 	pass

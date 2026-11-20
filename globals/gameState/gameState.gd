@@ -56,6 +56,7 @@ func _ready() -> void:
 
 # --- Public API ---------------------------------------------------------------
 
+
 ## Call from a menu scene's _ready(): visible cursor, not paused.
 func enter_menu() -> void:
 	_clear_menus()
@@ -147,6 +148,7 @@ func open_settings() -> void:
 
 # --- Input --------------------------------------------------------------------
 
+
 func _unhandled_input(event: InputEvent) -> void:
 	var pause_pressed := event.is_action_pressed("pause")
 	var cancel_pressed := event.is_action_pressed("ui_cancel")
@@ -167,6 +169,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 # --- Internals ----------------------------------------------------------------
+
 
 func _get_pause_menu() -> PauseMenu:
 	if _pause_menu == null:

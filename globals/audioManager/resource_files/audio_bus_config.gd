@@ -9,7 +9,6 @@ class_name AudioBusConfig
 ## This must match an existing bus name exactly.
 var bus_name: StringName = &"SFX"
 
-
 @export_category("Voice Limiting")
 
 ## Maximum number of simultaneous AudioStreamPlayers allowed on this bus.
@@ -20,11 +19,10 @@ var bus_name: StringName = &"SFX"
 ## - SFX: 8–16
 ## - Ambient: 2–4
 ## - Music: 1–2
-@export_range(0, 64, 1)
-var max_voices: int = 8
-
+@export_range(0, 64, 1) var max_voices: int = 8
 
 @export_category("Editor Integration")
+
 
 ## Builds a dynamic dropdown for `bus_name` based on the current AudioServer buses.
 ## This runs in the editor because the script is marked with @tool.
@@ -48,10 +46,12 @@ func _get_property_list() -> Array:
 		}
 	]
 
+
 func _get(property: StringName):
 	if property == &"bus_name":
 		return bus_name
 	return null
+
 
 func _set(property: StringName, value) -> bool:
 	if property == &"bus_name":

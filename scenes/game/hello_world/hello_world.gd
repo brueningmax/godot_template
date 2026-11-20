@@ -54,7 +54,10 @@ func _roll() -> void:
 
 
 func _update_info() -> void:
-	info.text = "Hello, world!\nSeed: %s\nLast roll: %s\n\nMove: WASD   Roll: Space   Pause: Esc" % [
-		RngManager.get_seed(),
-		_last_roll,
-	]
+	info.text = (
+		"Hello, world!\nSeed: %s\nLast roll: %s\n\nMove: WASD   Roll: Space   Pause: Esc"
+		% [
+			RngManager.get_seed(),
+			_last_roll,
+		]
+	)

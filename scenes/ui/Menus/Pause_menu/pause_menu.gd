@@ -10,6 +10,7 @@ signal quit_pressed
 @onready var btn_restart: UIButton = $MarginContainer/VBoxContainer/VBoxContainer/Restart
 @onready var btn_quit: UIButton = $MarginContainer/VBoxContainer/VBoxContainer/Quit
 
+
 func _ready() -> void:
 	default_focus = btn_resume.get_path()
 	btn_resume.pressed.connect(func(): resume_pressed.emit())

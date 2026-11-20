@@ -60,6 +60,7 @@ func _on_open() -> void:
 
 # --- Rows -------------------------------------------------------------------
 
+
 func _build_row(row: Dictionary) -> void:
 	var box := HBoxContainer.new()
 	box.add_theme_constant_override("separation", 16)
