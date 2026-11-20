@@ -1,0 +1,44 @@
+name: Bug report
+description: Something in the template doesn't work as described.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What went wrong? Include error messages from the Output / Debugger panel.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Run the game (F5)
+        2. Press Esc
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: input
+    id: godot
+    attributes:
+      label: Godot version
+      placeholder: 4.7-stable
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: Windows 11 / macOS 15 / Ubuntu 24.04
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: Seed (shown in game), screenshots, logs, ideas about the cause.

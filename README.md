@@ -11,25 +11,21 @@ All systems are autoloads, available globally by name:
 
 | Autoload          | File                                            | Purpose                                                          |
 | ----------------- | ----------------------------------------------- | ---------------------------------------------------------------- |
-| `SignalBus`       | `globals/signalBus/signalBus.gd`                | Global signals for decoupled communication between systems.      |
-| `RngManager`      | `globals/rngManager/rngManager.gd`              | Seeded, reproducible random streams and order-independent rolls. |
-| `Audio`           | `globals/audioManager/audio_manager_node.tscn`  | Plays sounds by ID (`ui.click`) with pooling and music layers.   |
-| `SettingsManager` | `globals/settingsManager/settingsManager.gd`    | Loads, saves and applies user settings (`user://settings.cfg`).  |
-| `GameState`       | `globals/gameState/gameState.gd`                | Menu / playing / paused state; owns pause, the pause menu and mouse mode. |
-| `SceneManager`    | `globals/sceneManager/sceneManager.gd`          | Scene changes with fades and intermediate screens.               |
+| `SignalBus`       | `globals/signal_bus/signal_bus.gd`                | Global signals for decoupled communication between systems.      |
+| `RngManager`      | `globals/rng_manager/rng_manager.gd`              | Seeded, reproducible random streams and order-independent rolls. |
+| `Audio`           | `globals/audio_manager/audio_manager_node.tscn`  | Plays sounds by ID (`ui.click`) with pooling and music layers.   |
+| `SettingsManager` | `globals/settings_manager/settings_manager.gd`    | Loads, saves and applies user settings (`user://settings.cfg`).  |
+| `GameState`       | `globals/game_state/game_state.gd`                | Menu / playing / paused state; owns pause, the pause menu and mouse mode. |
+| `SceneManager`    | `globals/scene_manager/scene_manager.gd`          | Scene changes with fades and intermediate screens.               |
 
 There are also menus (main, pause, settings), a reusable `UIButton`, and a debug **scene library** that lists every scene in the project and can preview and launch it.
 
 ## Quick start
 
-**New project from the template (Windows):**
+1. On GitHub, click **Use this template → Create a new repository**. A one-time workflow names the project after your repository and replaces this README, in one commit.
+2. Clone your new repository, open `project.godot` in Godot 4.7, and press **F5**.
 
-1. Copy `setup.bat` into an empty folder and run it.
-2. Enter your project name. The script pulls the template, starts a fresh Git history and replaces every `godot_game_template` reference with your project name.
-
-**Already cloned or copied the files:** run `rename.bat` in the project folder to do only the renaming.
-
-Then open `project.godot` in Godot 4.7 and press **F5**.
+Not using GitHub, or want a different name? See [Starting a new game](docs/TEMPLATE_GUIDE.md#starting-a-new-game-from-the-template).
 
 ## Tests
 
@@ -56,7 +52,8 @@ docs/        Documentation
 ## Documentation
 
 - **[Template guide](docs/TEMPLATE_GUIDE.md)**: how each system works, how to use it, and the non-obvious parts. Start here.
-- [Audio system](globals/audioManager/Readme.md): full reference for the audio manager.
+- [Contributing](CONTRIBUTING.md): folder layout, naming, workflow.
+- [Audio system](globals/audio_manager/README.md): full reference for the audio manager.
 
 ## Roadmap
 

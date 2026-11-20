@@ -1,0 +1,28 @@
+# Git hooks via pre-commit (https://pre-commit.com). Optional for developers;
+# CI runs the same checks through tools/check.sh.
+#
+#   pip install -r requirements-dev.txt
+#   pre-commit install                        # format + lint on every commit
+#   pre-commit install --hook-type pre-push   # optional: full check before push
+#
+# Keep `rev` below equal to the gdtoolkit version in requirements-dev.txt
+# (tools/check.sh fails if they differ).
+
+exclude: ^addons/  # third-party code (GUT)
+
+repos:
+  - repo: https://github.com/Scony/godot-gdscript-toolkit
+    rev: 4.5.0
+    hooks:
+      - id: gdformat  # formats staged scripts in place; re-add and commit again
+      - id: gdlint
+
+  - repo: local
+    hooks:
+      - id: full-check
+        name: full check (tools/check.sh, needs Godot)
+        entry: tools/check.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]

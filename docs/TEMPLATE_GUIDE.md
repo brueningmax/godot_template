@@ -6,6 +6,7 @@ How the template's systems work, how to use them, and what isn't obvious from th
 
 ## Contents
 
+0. [Starting a new game from the template](#starting-a-new-game-from-the-template)
 1. [Overview and boot flow](#overview-and-boot-flow)
 2. [Autoloads](#autoloads)
 3. [SignalBus](#signalbus)
@@ -23,23 +24,52 @@ How the template's systems work, how to use them, and what isn't obvious from th
 
 ---
 
+## Starting a new game from the template
+
+### With GitHub ("Use this template")
+
+1. On the template's GitHub page, click **Use this template → Create a new repository**.
+2. The new repository's first push runs `.github/workflows/template-setup.yml` once:
+   - sets `config/name` in `project.godot` to the repository name (e.g. `my-deckbuilder`)
+   - replaces the template README with a short stub
+   - commits both as **"Set up project from template"**
+3. Pull that commit, then open the project in Godot.
+
+The workflow does nothing on later pushes: it only acts while `project.godot` still has the template's name. You can delete the file afterwards. It can't delete itself, because GitHub's built-in token isn't allowed to change workflow files. It never runs in the template repository itself or in forks.
+
+### Without GitHub (or to choose a different name)
+
+```bash
+git clone --depth 1 https://github.com/brueningmax/godot_template.git my-game
+```
+```bash
+cd my-game && rm -rf .git && git init
+```
+```bash
+godot --headless --script res://tools/rename_project.gd -- "My Game"
+```
+
+The last command is the cross-platform rename tool. It works on Windows too (`godot` being your Godot executable), and you can rerun it any time to rename a project. It changes only the `config/name` line of `project.godot`.
+
+**Rename before the first real run.** The project name also decides the **user data folder** that `user://` points to, which holds settings, saves and logs. Renaming later starts the game with empty user data, because the old folder keeps the old name. After renaming, delete the `.godot/` folder (editor cache) and reopen the project.
+
 ## Overview and boot flow
 
 ```
 F5 / exported game                        F6 / "run current scene"
 ──────────────────                        ────────────────────────
 autoloads _ready()                        autoloads _ready()
-Main.tscn (boot.gd)                       your scene, on its own
+main.tscn (boot.gd)                       your scene, on its own
   ├─ show_splash? ─ yes ─► SPLASH_SCREEN    (no boot, no menu, no redirect)
   │                          │ (timer or any input)
   └────── no ───────────────►┴► start_scene (MAIN_MENU)
                                  └─ Play ─► GAME_SCENE (hello_world)
 ```
 
-- **Full game (F5):** the main scene `globals/sceneManager/Main.tscn` runs `boot.gd`, which hands over to `SceneManager` and then removes itself. Change the start flow by selecting the root node of `Main.tscn` and editing its exports:
+- **Full game (F5):** the main scene `globals/scene_manager/main.tscn` runs `boot.gd`, which hands over to `SceneManager` and then removes itself. Change the start flow by selecting the root node of `main.tscn` and editing its exports:
   - `start_scene`: which `SceneKey` to start in, e.g. `GAME_SCENE` to skip the menu while developing.
   - `show_splash`, `splash_scene`, `splash_time`.
-- **Single scene (F6):** `Main.tscn` never loads, so the boot flow never runs, and the `SceneManager` autoload doesn't do anything on its own. Your scene runs exactly as it is. If it calls `SceneManager.change_scene()`, for example "back to menu", the manager takes the running scene over and replaces it normally.
+- **Single scene (F6):** `main.tscn` never loads, so the boot flow never runs, and the `SceneManager` autoload doesn't do anything on its own. Your scene runs exactly as it is. If it calls `SceneManager.change_scene()`, for example "back to menu", the manager takes the running scene over and replaces it normally.
 
 **Rule:** never put start-up navigation in an autoload's `_ready()`. Autoloads also run for F6, so it would redirect every scene you try to debug. Start-up navigation belongs in `boot.gd`.
 
@@ -60,7 +90,7 @@ Autoloads are created in the order listed in **Project Settings → Globals → 
 
 ## SignalBus
 
-`globals/signalBus/signalBus.gd`. Holds signals that several unrelated systems care about, so they don't need references to each other.
+`globals/signal_bus/signal_bus.gd`. Holds signals that several unrelated systems care about, so they don't need references to each other.
 
 ```gdscript
 # Listen
@@ -81,7 +111,7 @@ Always use this typed form, never `connect("name", ...)` or `emit_signal("name")
 
 **Bus or direct signal?** Use the bus when the emitter shouldn't know who listens and the listeners are unrelated: HUD, audio and achievements reacting to the same event, or anything global. Use a normal signal for parent/child communication, e.g. a button telling its menu it was pressed. Passing everything through the bus makes data flow hard to follow.
 
-**Adding a game signal:** put it in the `# --- Game ---` section of `signalBus.gd` with a `##` doc comment, which shows in the editor's help. Name it in the past tense, `noun_verbed`: `enemy_killed`, `card_played`, `level_completed`.
+**Adding a game signal:** put it in the `# --- Game ---` section of `signal_bus.gd` with a `##` doc comment, which shows in the editor's help. Name it in the past tense, `noun_verbed`: `enemy_killed`, `card_played`, `level_completed`.
 
 **Lifetime:** when a node is freed, Godot removes connections to its **methods** automatically, so `SignalBus.x.connect(_on_x)` needs no cleanup. **Lambdas are different.** A lambda stays connected until the object that *created* it is freed. If it only *captures* a node that is later freed, the next emit errors with "Lambda capture … was freed". From nodes that can be freed, connect methods, or disconnect lambdas in `_exit_tree()`.
 
@@ -89,7 +119,7 @@ Always use this typed form, never `connect("name", ...)` or `emit_signal("name")
 
 ## SettingsManager
 
-`globals/settingsManager/settingsManager.gd`. Holds user preferences in sections, persists them to `user://settings.cfg` and applies them to the engine.
+`globals/settings_manager/settings_manager.gd`. Holds user preferences in sections, persists them to `user://settings.cfg` and applies them to the engine.
 
 ```gdscript
 var vol: float = SettingsManager.get_setting("audio", "master_volume", 0.8)
@@ -109,14 +139,14 @@ Non-obvious behaviour:
 
 ### Settings menu
 
-`scenes/ui/Menus/Settings_menu/`, opened by **Options** in the main menu and **Settings** in the pause menu, both through `GameState.open_settings()`.
+`scenes/ui/menus/settings_menu/`, opened by **Options** in the main menu and **Settings** in the pause menu, both through `GameState.open_settings()`.
 
 - **Preview, Apply, Back:** every change applies immediately, so you hear and see it, but it isn't saved. **Apply** saves and closes. **Back** or Esc restores the values from when the menu opened.
 - The rows are built at runtime from the `ROWS` list at the top of `settings_menu.gd`.
 
 ### Adding a setting end to end
 
-1. **Default:** add the key to `DEFAULTS` in `settingsManager.gd`, e.g. `"display": {..., "max_fps": 0}`. Existing players get the default automatically.
+1. **Default:** add the key to `DEFAULTS` in `settings_manager.gd`, e.g. `"display": {..., "max_fps": 0}`. Existing players get the default automatically.
 2. **Apply:** handle the key in `_apply_display()` (or a new `_apply_<section>()` added to the `match` in `_apply_setting()`), e.g. `"max_fps": Engine.max_fps = value`.
 3. **Menu:** add one entry to `ROWS` in `settings_menu.gd`: `{section = "display", key = "max_fps", label = "FPS cap", type = RowType.SLIDER}`. Sliders currently cover 0–1. A different range or a dropdown needs a new `RowType`.
 
@@ -124,7 +154,7 @@ Non-obvious behaviour:
 
 ## RngManager
 
-`globals/rngManager/rngManager.gd` and `rngStream.gd`. All gameplay randomness should come from here, so a run can be reproduced from its seed.
+`globals/rng_manager/rng_manager.gd` and `rng_stream.gd`. All gameplay randomness should come from here, so a run can be reproduced from its seed.
 
 Everything derives from one human-readable `seed_string`. There are two ways to draw numbers:
 
@@ -157,7 +187,7 @@ All values are derived with 32-bit FNV-1a hashing of `seed + "|" + key`, so a gi
 
 ## GameState and pausing
 
-`globals/gameState/gameState.gd`. Tracks whether the player is in a menu, playing, or paused, and is the **only** code that sets `get_tree().paused` and `Input.mouse_mode`. It's also the only handler of the `pause` action.
+`globals/game_state/game_state.gd`. Tracks whether the player is in a menu, playing, or paused, and is the **only** code that sets `get_tree().paused` and `Input.mouse_mode`. It's also the only handler of the `pause` action.
 
 ```
              enter_menu()                  enter_gameplay(mouse_mode)
@@ -203,7 +233,7 @@ This works the same when the scene is run on its own (F6), because `GameState` i
 
 ## SceneManager and SceneRegistry
 
-`globals/sceneManager/sceneManager.gd` (autoload `SceneManager`, class `MainRoot`) and `scene_registry.gd` (class `SceneRegistry`, **not** an autoload).
+`globals/scene_manager/scene_manager.gd` (autoload `SceneManager`, class `MainRoot`) and `scene_registry.gd` (class `SceneRegistry`, **not** an autoload).
 
 Scenes are referred to by enum key, never by path:
 
@@ -214,7 +244,7 @@ SceneManager.change_scene_with_screen(SceneRegistry.SceneKey.MAIN_MENU, SceneReg
 SceneManager.reload_current()   # restart the current scene from its file
 ```
 
-To add a scene, add a value to `SceneKey` and an entry in `SCENES` in `scene_registry.gd`. Add new keys at the **end** of the enum: exported `SceneKey` values, e.g. `start_scene` on `Main.tscn`, are stored as numbers, so inserting a key in the middle shifts them.
+To add a scene, add a value to `SceneKey` and an entry in `SCENES` in `scene_registry.gd`. Add new keys at the **end** of the enum: exported `SceneKey` values, e.g. `start_scene` on `main.tscn`, are stored as numbers, so inserting a key in the middle shifts them.
 
 **Intermediate screens** (splash, "chapter 2" cards) are shown by `change_scene_with_screen()` for `screen_time` seconds. To make a screen skippable, give its root script a `signal skipped` and emit it, e.g. on any input. The manager listens from the moment the screen is added, so a skip during its fade-in also counts. `scenes/ui/splash_screen/splash_screen.gd` is the example.
 
@@ -234,7 +264,7 @@ Non-obvious behaviour:
 
 ## Audio
 
-`globals/audioManager/`. The full reference is the [audio system README](../globals/audioManager/Readme.md). In short:
+`globals/audio_manager/`. The full reference is the [audio system README](../globals/audio_manager/README.md). In short:
 
 ```gdscript
 Audio.play(&"ui.click")
@@ -244,7 +274,7 @@ Audio.music_layer_to(&"base", &"music.flow.base", 1.5)
 
 There are two ways to refer to a sound.
 
-**By ID:** for shared sounds used in many places (UI clicks, footsteps). An ID is `<registry namespace>.<set id>`, plus `.<cue id>` to address a single named variation. Registries are `.tres` files in `resources/audio/audioRegistries/`. To use one, add it to the `registries` array on `audio_manager_node.tscn`.
+**By ID:** for shared sounds used in many places (UI clicks, footsteps). An ID is `<registry namespace>.<set id>`, plus `.<cue id>` to address a single named variation. Registries are `.tres` files in `resources/audio/audio_registries/`. To use one, add it to the `registries` array on `audio_manager_node.tscn`.
 
 **By direct reference:** for sounds that belong to one scene. Keep the files next to the scene and play the resource itself, with no registry entry:
 
@@ -279,7 +309,7 @@ Gotchas:
 
 ## Menus and UI
 
-- **`MenuBase`** (`scenes/ui/Menus/menu_base.gd`): base class for menus. `open()` / `close()` fade the menu in and out, and the tweens keep running while the game is paused. Set `default_focus` so keyboard and controller users land on a control. Override `_on_open()` / `_on_close()` for menu-specific behaviour.
+- **`MenuBase`** (`scenes/ui/menus/menu_base.gd`): base class for menus. `open()` / `close()` fade the menu in and out, and the tweens keep running while the game is paused. Set `default_focus` so keyboard and controller users land on a control. Override `_on_open()` / `_on_close()` for menu-specific behaviour.
 - **`UIButton`** (`scenes/ui/components/ui_button/`): a `Button` wrapper with a hover lift and `ui.hover` / `ui.click` sounds through `Audio`. Set its label with the `text` property. Listen to the wrapper's `pressed` / `button_down` / `button_up` signals, not the inner button's. Hover also triggers on keyboard/controller focus, so focusing a button plays `ui.hover`.
 
 **Making a new menu:**
@@ -424,6 +454,7 @@ If you override `before_all()`, `after_all()` or `after_each()` in a `TemplateTe
 
 | Step | Fails when |
 | --- | --- |
+| Tool versions | gdtoolkit in `requirements-dev.txt` differs from `rev:` in `.pre-commit-config.yaml` |
 | `gdformat --check .` | a script isn't formatted (fix: `gdformat .`) |
 | `gdlint .` | a lint rule is broken |
 | Import (`--import`) | the import log has `ERROR:` / `SCRIPT ERROR:` lines (missing files, broken references) |
@@ -456,14 +487,55 @@ The last form is for when `godot` isn't on your PATH. It works on Linux and macO
 
 The version is pinned in several places that must agree:
 
-1. `GODOT_VERSION` in `.github/workflows/ci.yml`.
+1. `GODOT_VERSION` in `.github/workflows/ci.yml` **and** `.github/workflows/release.yml`.
 2. `config/features` in `project.godot` (Godot updates it when you open the project in the new editor).
 3. **GUT:** replace `addons/gut/` with the GUT release built for that Godot version (GUT's README has a table).
 4. If you use a cloud dev environment, the Godot version in its setup script.
 
-> Planned: exports and releases in [#10](https://github.com/brueningmax/godot_template/issues/10).
+### Exporting and releases
+
+`export_presets.cfg` has three release presets. All of them export to `build/` (git-ignored):
+
+| Preset | Output | Notes |
+| --- | --- | --- |
+| **Windows Desktop** | `build/windows/<name>.exe` + `.pck` | x86_64. The `.exe` keeps Godot's icon and version info (`application/modify_resources` is off, so no `rcedit` is needed). To brand it, install `rcedit`, set its path in Editor Settings → Export → Windows, and turn the option on. |
+| **Linux** | `build/linux/<name>.x86_64` + `.pck` | x86_64. |
+| **Web** | `build/web/index.html` + `.js`/`.wasm`/`.pck` | **No threads** (`variant/thread_support=false`), so it runs on any static host: GitHub Pages, itch.io. Threaded web builds need COOP/COEP headers, which those hosts don't send by default. |
+
+`<name>` is `config/name` in lowercase with dashes, e.g. `my-deckbuilder`.
+
+**Excluded from every build:** `addons/gut/*`, `test/*`, `tools/*`, `docs/*`. The test framework and dev tools never ship. A packed build is about 200 KB, compared to 2.5 MB for GUT alone. Keep the filter when you add presets.
+
+**Export templates** are needed once per Godot version: in the editor, **Editor → Manage Export Templates → Download and Install**. On the command line, extract the `templates/` folder of `Godot_v<version>_export_templates.tpz` into `~/.local/share/godot/export_templates/<version>/` (Linux), `%APPDATA%\Godot\export_templates\<version>\` (Windows) or `~/Library/Application Support/Godot/export_templates/<version>/` (macOS). `<version>` is the content of its `version.txt`, e.g. `4.7.stable`.
+
+**Exporting from the command line:**
+
+```bash
+tools/export.sh
+```
+```bash
+tools/export.sh Linux Web
+```
+
+This exports every preset (or only the named ones), zips each as `build/<name>-<platform>.zip`, and fails on export errors. Godot exits 0 even when an export has errors, so the script scans the logs.
+
+**Cutting a release:** push a version tag.
+
+```bash
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+`.github/workflows/release.yml` then runs all checks, exports the three presets and creates a **GitHub Release** for the tag, with generated notes and the three zips attached. Godot and the three needed templates are cached per version; the full template bundle is about 1.3 GB.
+
+**Adding a platform:**
+
+- **macOS** needs a signing identity and notarization (an Apple developer account), so it isn't preset. Add it in the editor (**Project → Export → Add → macOS**), put signing secrets in `export_credentials.cfg` (git-ignored), and add the template file to `release.yml`'s extract list.
+- **Android** needs the Android SDK, a keystore and the Android build template.
+- In every case, add the new preset's name to the `case` in `tools/export.sh`.
 
 ## Conventions
+
+Folder layout, naming rules, the rules that keep the template working, and the issue → branch → PR workflow are in **[CONTRIBUTING.md](../CONTRIBUTING.md)**. AI coding agents get the same rules, plus headless-testing gotchas, in **[CLAUDE.md](../CLAUDE.md)**. Issues use the bug or feature forms, and PRs use `.github/pull_request_template.md`.
 
 ### Code style
 
@@ -489,4 +561,65 @@ Rules that aren't obvious:
 - `gdformat` joins argument lists back onto one line when they fit, so don't hand-wrap short signatures; it will undo it.
 - `@export_category()` only groups **exported** properties in the inspector. Use `# --- Section ---` comments to divide code.
 
-> Planned: folder and file naming, contribution flow: [#14](https://github.com/brueningmax/godot_template/issues/14).
+### Pre-commit hooks (optional)
+
+`.pre-commit-config.yaml` runs gdtoolkit's official hooks on the `.gd` files you commit. Third-party code in `addons/` is skipped.
+
+```bash
+pip install -r requirements-dev.txt
+```
+```bash
+pre-commit install
+```
+```bash
+pre-commit install --hook-type pre-push
+```
+
+The second command enables the per-commit hooks. The third is optional: it also runs the full `tools/check.sh` before every push (about 20 s, needs Godot on `PATH` or `GODOT=`).
+
+| Hook | When | What happens |
+| --- | --- | --- |
+| `gdformat` | commit | Formats the staged scripts **in place**. If it changed anything, the commit stops: review the change, `git add` and commit again. |
+| `gdlint` | commit | Reports lint errors and blocks the commit until they're fixed. |
+| `full-check` | push (opt-in) | Runs `tools/check.sh`, the same checks as CI. |
+
+- Skip the hooks once with `git commit --no-verify` (or `git push --no-verify`). CI still runs everything.
+- Run them on every file: `pre-commit run --all-files`.
+- **Updating gdtoolkit:** change the version in **both** `requirements-dev.txt` and `rev:` in `.pre-commit-config.yaml`. `tools/check.sh` (and so CI) fails if the two differ.
+- **Windows:** commit from a terminal where Python and `pre-commit` are on `PATH`. A GUI client that can't find them reports the hook as failed.
+
+### Repository hygiene
+
+`.gitignore` is grouped and commented. In short, Git ignores:
+
+- **Godot:** the `.godot/` cache, generated `*.translation` files, and `export_credentials.cfg` (export signing keys and passwords, which must never be committed).
+- **Builds:** `/build/`, where exports go.
+- **OS and editor clutter:** `.DS_Store`, `Thumbs.db`, `.idea/`, swap files, and everything in `.vscode/` **except** the four shared files (`launch.json`, `settings.json`, `extensions.json`, `tasks.json`).
+- **Python dev tools:** `__pycache__/`, `.venv/`.
+
+Commit `*.import` and `*.uid` files: Godot needs them to keep resource IDs and import settings stable for everyone.
+
+`.gitattributes` normalises text files to LF line endings and marks images, audio, fonts and models as **binary**, so Git never diffs them or converts their line endings.
+
+### Enabling Git LFS in your game
+
+[Git LFS](https://git-lfs.com) stores large binary files (music, textures, models) outside the normal Git history. The repository holds small pointer files, and each checkout downloads only the versions it needs. The template doesn't enable it, since its assets are about 100 KB. Turn it on in a game once real assets start arriving. Early is easier than late.
+
+1. Install Git LFS once per machine: `git lfs install`.
+2. In `.gitattributes`, uncomment the lines in the Git LFS block, by hand or with the command below (on macOS write `sed -i '' -E ...`), then commit `.gitattributes`.
+   ```bash
+   sed -i -E 's/^# (\*\.[a-z0-9]+ filter=lfs .*)$/\1/' .gitattributes
+   ```
+3. Move assets that are already committed into LFS. **This rewrites history.** Do it before others clone, or coordinate a re-clone:
+   ```bash
+   git lfs migrate import --everything --include="*.png,*.jpg,*.webp,*.exr,*.psd,*.kra,*.aseprite,*.ogg,*.wav,*.mp3,*.glb,*.blend,*.fbx"
+   ```
+   Then push with `git push --force-with-lease`.
+4. Check: `git lfs ls-files` lists the tracked files.
+
+Good to know:
+
+- Everyone who clones needs Git LFS installed. Without it they get pointer files instead of assets, and Godot reports import errors (CI's import step would catch that).
+- CI already checks out with `lfs: true`.
+- GitHub limits free LFS storage and download bandwidth. Check your plan's quota if the project has many large assets or CI runs.
+
