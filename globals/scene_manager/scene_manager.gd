@@ -47,7 +47,7 @@ func change_scene(
 ) -> void:
 	var packed: PackedScene = SceneRegistry.SCENES.get(scene_key)
 	if packed == null:
-		push_error("SceneManager: No scene registered for key: %s" % _key_name(scene_key))
+		Log.error(&"Scene", "No scene registered for key: %s" % _key_name(scene_key))
 		return
 	await _change_to(packed, scene_key, payload, use_fade)
 
@@ -57,7 +57,7 @@ func change_scene(
 func reload_current(payload: Dictionary = {}, use_fade: bool = true) -> void:
 	_adopt_standalone_scene()
 	if current_scene == null or current_scene.scene_file_path == "":
-		push_error("SceneManager: reload_current() has no scene file to reload")
+		Log.error(&"Scene", "reload_current() has no scene file to reload")
 		return
 	var packed: PackedScene = load(current_scene.scene_file_path)
 	await _change_to(packed, current_key, payload, use_fade)
@@ -93,6 +93,7 @@ func _change_to(packed: PackedScene, key: int, payload: Dictionary, use_fade: bo
 		await _fade_in(DEFAULT_FADE_DURATION)
 
 	_apply_payload(current_scene, payload)
+	Log.info(&"Scene", "changed to %s (%s)" % [current_scene.name, _key_name(current_key)])
 	scene_changed.emit(current_scene)
 	SignalBus.scene_change_finished.emit(current_scene)
 	_changing = false
@@ -111,7 +112,7 @@ func change_scene_with_screen(
 
 	var next_packed: PackedScene = SceneRegistry.SCENES.get(next_key)
 	if next_packed == null:
-		push_error("SceneManager: No scene registered for key: %s" % _key_name(next_key))
+		Log.error(&"Scene", "No scene registered for key: %s" % _key_name(next_key))
 		_changing = false
 		return
 
@@ -137,11 +138,9 @@ func change_scene_with_screen(
 	if screen_node:
 		await _fade_in(DEFAULT_FADE_DURATION)
 	else:
-		push_warning(
-			(
-				"SceneManager: No scene registered for screen key: %s — skipping screen."
-				% _key_name(screen_key)
-			)
+		Log.warn(
+			&"Scene",
+			"No scene registered for screen key: %s — skipping screen." % _key_name(screen_key)
 		)
 
 	await _wait_for_screen(token, screen_time)
@@ -157,6 +156,7 @@ func change_scene_with_screen(
 
 	await _fade_in(DEFAULT_FADE_DURATION)
 	_apply_payload(current_scene, payload)
+	Log.info(&"Scene", "changed to %s (%s)" % [current_scene.name, _key_name(current_key)])
 	scene_changed.emit(current_scene)
 	SignalBus.scene_change_finished.emit(current_scene)
 	_changing = false

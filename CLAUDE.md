@@ -29,15 +29,18 @@ gdformat . && gdlint .
 
 - Never set `get_tree().paused` or `Input.mouse_mode` outside `GameState`.
 - Never read `SceneRegistry.SCENES` outside `SceneManager` (cyclic reference: it preloads every scene).
+- Never use `print()`, `push_warning()` or `push_error()` in game code; use `Log.debug/info/warn/error(&"Category", "…")` (tools in `tools/` may print). In tests, assert intended `Log.error()` calls with `assert_push_error()`.
 - Never use string-based signals (`connect("name", …)`, `emit_signal("name")`). Use `SignalBus.name.connect(…)`.
 - Never edit files in `addons/` (vendored third-party code).
 - Never commit `.godot/`, `export_credentials.cfg` or anything under `build/`.
 
 ## Gotchas when running Godot headless
 
+- **CI imports from a cold cache.** Code that passes locally can fail there, e.g. `var x := SomeAutoload.some_property` ("Cannot infer the type"). Before pushing a change to scripts, run `rm -rf .godot && tools/check.sh` once. Prefer explicit types (`var x: Node = …`) when reading autoload properties.
 - **Godot exits 0 even when resources fail to load.** Check output for `ERROR:` / `SCRIPT ERROR:` lines; don't trust the exit code. `tools/check.sh` does this.
 - **`godot --check-only --script file.gd` gives false "Identifier not found" errors** for autoloads. Use `tools/check_scripts.gd` instead.
 - **In a `--script` SceneTree harness**, autoload names aren't globals at compile time. Fetch them with `root.get_node("SceneManager")`, and look up enums with `load("res://…/scene_registry.gd").SceneKey`.
 - **Always bound a headless run:** wrap it in `timeout`, and give harness scripts a watchdog (`create_timer(N).timeout.connect(quit)`). A runtime error before `quit()` otherwise hangs forever.
 - `--script` mode doesn't load the main scene. Instance `globals/scene_manager/main.tscn` yourself to test the boot flow.
+- **Headless windows are 64×64 px.** Don't assert pixel sizes of UI in tests; assert anchors/offsets. To *see* UI, render a real frame: `xvfb-run -a -s "-screen 0 1280x720x24" godot --rendering-driver opengl3 --audio-driver Dummy --resolution 1152x648 --script <harness>` and save `root.get_viewport().get_texture().get_image()` with `save_png()` after `await RenderingServer.frame_post_draw`.
 - Smoke runs need `--fixed-fps 60` so a frame count equals game time. Headless frames otherwise run unthrottled.

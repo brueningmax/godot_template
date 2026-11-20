@@ -83,7 +83,7 @@ func save_settings() -> void:
 
 	var err = config.save(settings_path)
 	if err != OK:
-		push_error("SettingsManager: Failed to save settings to %s" % settings_path)
+		Log.error(&"Settings", "Failed to save settings to %s" % settings_path)
 
 
 func load_settings() -> void:

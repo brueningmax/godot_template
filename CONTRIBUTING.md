@@ -59,6 +59,7 @@ Code style is enforced by `gdformat` and `gdlint`. See [Code style](docs/TEMPLAT
 - **Change scenes through `SceneManager`**, never `get_tree().change_scene_to_*()`.
 - **Only `SceneManager` reads `SceneRegistry.SCENES`.** Reading it elsewhere creates a cyclic reference. `SceneRegistry.SceneKey` is fine anywhere.
 - **Add new `SceneKey` values at the end** of the enum. Exported values are stored as numbers.
+- **Logging:** use `Log.debug/info/warn/error(&"Category", "…")` in game code, not `print()` or `push_*()`.
 - **SignalBus:** typed signals only (`SignalBus.x.connect(...)`, `.emit(...)`), with a `##` doc comment.
 - **Tests:** new behaviour comes with a test. Integration tests extend `TemplateTest`.
 

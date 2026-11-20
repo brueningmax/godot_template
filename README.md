@@ -11,12 +11,14 @@ All systems are autoloads, available globally by name:
 
 | Autoload          | File                                            | Purpose                                                          |
 | ----------------- | ----------------------------------------------- | ---------------------------------------------------------------- |
+| `Log`             | `globals/log/log.gd`                              | Leveled, categorized logging; also captures engine errors.       |
 | `SignalBus`       | `globals/signal_bus/signal_bus.gd`                | Global signals for decoupled communication between systems.      |
 | `RngManager`      | `globals/rng_manager/rng_manager.gd`              | Seeded, reproducible random streams and order-independent rolls. |
 | `Audio`           | `globals/audio_manager/audio_manager_node.tscn`  | Plays sounds by ID (`ui.click`) with pooling and music layers.   |
 | `SettingsManager` | `globals/settings_manager/settings_manager.gd`    | Loads, saves and applies user settings (`user://settings.cfg`).  |
 | `GameState`       | `globals/game_state/game_state.gd`                | Menu / playing / paused state; owns pause, the pause menu and mouse mode. |
 | `SceneManager`    | `globals/scene_manager/scene_manager.gd`          | Scene changes with fades and intermediate screens.               |
+| `Debug`           | `globals/debug/debug.tscn`                        | F1 overlay, ~ console with cheat commands, seed display (debug builds). |
 
 There are also menus (main, pause, settings), a reusable `UIButton`, and a debug **scene library** that lists every scene in the project and can preview and launch it.
 
