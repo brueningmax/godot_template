@@ -1,5 +1,8 @@
-extends Node
 class_name MainRoot
+extends Node
+
+signal scene_changed(new_scene: Node)
+signal _screen_finished(token: int)
 
 const DEFAULT_SCREEN_TIME: float = 2.0
 const DEFAULT_FADE_DURATION: float = 0.25
@@ -17,9 +20,6 @@ var _screen_done_token := -1
 
 @onready var holder := Node.new()
 @onready var overlay := CanvasLayer.new()
-
-signal scene_changed(new_scene: Node)
-signal _screen_finished(token: int)
 
 
 func _ready() -> void:
@@ -172,7 +172,7 @@ func change_scene_with_screen(
 # Convenience: return to the main menu with a splash screen.
 func goto_menu() -> void:
 	await change_scene_with_screen(
-		SceneRegistry.SceneKey.MainMenu, SceneRegistry.SceneKey.SplashScreen
+		SceneRegistry.SceneKey.MAIN_MENU, SceneRegistry.SceneKey.SPLASH_SCREEN
 	)
 
 

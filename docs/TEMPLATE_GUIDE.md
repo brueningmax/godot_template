@@ -30,20 +30,20 @@ F5 / exported game                        F6 / "run current scene"
 ──────────────────                        ────────────────────────
 autoloads _ready()                        autoloads _ready()
 Main.tscn (boot.gd)                       your scene, on its own
-  ├─ show_splash? ─ yes ─► SplashScreen     (no boot, no menu, no redirect)
+  ├─ show_splash? ─ yes ─► SPLASH_SCREEN    (no boot, no menu, no redirect)
   │                          │ (timer or any input)
-  └────── no ───────────────►┴► start_scene (MainMenu)
-                                 └─ Play ─► GameScene (hello_world)
+  └────── no ───────────────►┴► start_scene (MAIN_MENU)
+                                 └─ Play ─► GAME_SCENE (hello_world)
 ```
 
 - **Full game (F5):** the main scene `globals/sceneManager/Main.tscn` runs `boot.gd`, which hands over to `SceneManager` and then removes itself. Change the start flow by selecting the root node of `Main.tscn` and editing its exports:
-  - `start_scene`: which `SceneKey` to start in, e.g. `GameScene` to skip the menu while developing.
+  - `start_scene`: which `SceneKey` to start in, e.g. `GAME_SCENE` to skip the menu while developing.
   - `show_splash`, `splash_scene`, `splash_time`.
 - **Single scene (F6):** `Main.tscn` never loads, so the boot flow never runs, and the `SceneManager` autoload doesn't do anything on its own. Your scene runs exactly as it is. If it calls `SceneManager.change_scene()`, for example "back to menu", the manager takes the running scene over and replaces it normally.
 
 **Rule:** never put start-up navigation in an autoload's `_ready()`. Autoloads also run for F6, so it would redirect every scene you try to debug. Start-up navigation belongs in `boot.gd`.
 
-The **hello-world scene** (`scenes/game/hello_world/`) is a placeholder game showing input actions, an RNG stream, `Audio` and `GameState` (Esc pauses) in about 60 lines. Replace it with your game by pointing `SceneKey.GameScene` at your scene in `scene_registry.gd`.
+The **hello-world scene** (`scenes/game/hello_world/`) is a placeholder game showing input actions, an RNG stream, `Audio` and `GameState` (Esc pauses) in about 60 lines. Replace it with your game by pointing `SceneKey.GAME_SCENE` at your scene in `scene_registry.gd`.
 
 ## Autoloads
 
@@ -85,7 +85,7 @@ Always use this typed form, never `connect("name", ...)` or `emit_signal("name")
 
 **Lifetime:** when a node is freed, Godot removes connections to its **methods** automatically, so `SignalBus.x.connect(_on_x)` needs no cleanup. **Lambdas are different.** A lambda stays connected until the object that *created* it is freed. If it only *captures* a node that is later freed, the next emit errors with "Lambda capture … was freed". From nodes that can be freed, connect methods, or disconnect lambdas in `_exit_tree()`.
 
-**Trap: only `SceneManager` may read `SceneRegistry.SCENES`.** `SCENES` `preload()`s every registered scene, and those scenes' scripts use the autoloads. If an autoload or a scene script reads `SCENES`, Godot sees a cycle and every affected script fails with "Could not resolve member \"SCENES\": Cyclic reference". Using the enum (`SceneRegistry.SceneKey.MainMenu`) is fine anywhere. ([#22](https://github.com/brueningmax/godot_template/issues/22) removes the cause by storing paths instead of preloads.)
+**Trap: only `SceneManager` may read `SceneRegistry.SCENES`.** `SCENES` `preload()`s every registered scene, and those scenes' scripts use the autoloads. If an autoload or a scene script reads `SCENES`, Godot sees a cycle and every affected script fails with "Could not resolve member \"SCENES\": Cyclic reference". Using the enum (`SceneRegistry.SceneKey.MAIN_MENU`) is fine anywhere. ([#22](https://github.com/brueningmax/godot_template/issues/22) removes the cause by storing paths instead of preloads.)
 
 ## SettingsManager
 
@@ -207,9 +207,9 @@ This works the same when the scene is run on its own (F6), because `GameState` i
 Scenes are referred to by enum key, never by path:
 
 ```gdscript
-SceneManager.change_scene(SceneRegistry.SceneKey.MainMenu)
-SceneManager.change_scene(SceneRegistry.SceneKey.GameScene, {"level": 2}, true)  # payload, fade
-SceneManager.change_scene_with_screen(SceneRegistry.SceneKey.MainMenu, SceneRegistry.SceneKey.SplashScreen, 2.0)
+SceneManager.change_scene(SceneRegistry.SceneKey.MAIN_MENU)
+SceneManager.change_scene(SceneRegistry.SceneKey.GAME_SCENE, {"level": 2}, true)  # payload, fade
+SceneManager.change_scene_with_screen(SceneRegistry.SceneKey.MAIN_MENU, SceneRegistry.SceneKey.SPLASH_SCREEN, 2.0)
 SceneManager.reload_current()   # restart the current scene from its file
 ```
 
@@ -363,4 +363,28 @@ Alternatively, set `"godotTools.lsp.headless": true` in your User settings, and 
 
 ## Conventions
 
-> Planned: [#14](https://github.com/brueningmax/godot_template/issues/14).
+### Code style
+
+Scripts follow the [official GDScript style guide](https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/gdscript_styleguide.html), enforced by [gdtoolkit](https://github.com/Scony/godot-gdscript-toolkit) (version pinned in `requirements-dev.txt`):
+
+```bash
+pip install -r requirements-dev.txt
+```
+```bash
+gdformat .          # format all scripts in place
+```
+```bash
+gdlint .            # lint; "Success: no problems found" is the goal
+```
+
+`gdlintrc` holds the lint rules. They're gdtoolkit's defaults, except that private signals may start with an underscore (`signal _screen_finished`), like private functions and variables.
+
+Rules that aren't obvious:
+
+- **Order of declarations in a script:** `@tool` → `class_name` → `extends` → doc comment → signals → enums → constants → static vars → `@export` vars → public vars → private (`_`) vars → `@onready` vars → functions.
+- **Names:** `snake_case` functions and variables, `PascalCase` classes and enum names, `CONSTANT_CASE` constants and **enum values** (`SceneKey.MAIN_MENU`).
+- **Lines** are at most 100 characters. For long node paths, mark the node **Access as Unique Name** in the scene and use `%NodeName` instead of `$A/B/C/NodeName`.
+- `gdformat` joins argument lists back onto one line when they fit, so don't hand-wrap short signatures; it will undo it.
+- `@export_category()` only groups **exported** properties in the inspector. Use `# --- Section ---` comments to divide code.
+
+> Planned: folder and file naming, contribution flow: [#14](https://github.com/brueningmax/godot_template/issues/14).

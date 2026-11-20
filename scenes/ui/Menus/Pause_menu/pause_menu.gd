@@ -1,5 +1,5 @@
-extends MenuBase
 class_name PauseMenu
+extends MenuBase
 
 signal resume_pressed
 signal settings_pressed

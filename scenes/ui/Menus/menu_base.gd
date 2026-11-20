@@ -1,5 +1,5 @@
-extends Control
 class_name MenuBase
+extends Control
 
 @export var default_focus: NodePath
 var _tween: Tween

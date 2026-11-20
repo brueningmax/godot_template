@@ -1,5 +1,5 @@
-extends Node
 class_name AudioManager
+extends Node
 
 @export_category("Content")
 
@@ -15,7 +15,21 @@ class_name AudioManager
 ## When the limit is exceeded, the oldest voice is reused (stolen).
 @export var bus_configs: Array[AudioBusConfig] = []
 
-@export_category("Runtime State")
+@export_category("Music Layers")
+
+## Default bus used for music layers when AudioSet.bus_name is empty.
+## Usually "Music", but you can rename your buses and keep the system working.
+@export var default_music_bus: StringName = &"Music"
+
+## Default fade duration for music layer transitions.
+## Used when fade_sec is not provided (or is negative).
+@export_range(0.0, 10.0, 0.05) var default_music_fade_sec: float = 1.0
+
+## Global trim applied to all music layers and stingers.
+## Useful for balancing without touching every AudioCue volume.
+@export_range(-30.0, 12.0, 0.1) var music_layers_volume_db: float = 0.0
+
+# --- Runtime state ---
 
 ## Resolved lookup table:
 ## full audio ID (e.g. "move.step") -> AudioSet
@@ -45,20 +59,6 @@ var _started_at_msec_3d: Dictionary = {}  # Dictionary[int, int]
 ## persistent emitters map 1:1 to world objects (machines, wind zones, etc.).
 var _follow_players: Dictionary = {}
 
-@export_category("Music Layers")
-
-## Default bus used for music layers when AudioSet.bus_name is empty.
-## Usually "Music", but you can rename your buses and keep the system working.
-@export var default_music_bus: StringName = &"Music"
-
-## Default fade duration for music layer transitions.
-## Used when fade_sec is not provided (or is negative).
-@export_range(0.0, 10.0, 0.05) var default_music_fade_sec: float = 1.0
-
-## Global trim applied to all music layers and stingers.
-## Useful for balancing without touching every AudioCue volume.
-@export_range(-30.0, 12.0, 0.1) var music_layers_volume_db: float = 0.0
-
 ## Per-layer A/B players for smooth transitions.
 ## layer_name -> [playerA, playerB]
 ##
@@ -79,7 +79,7 @@ var _music_layer_tweens: Dictionary = {}
 ## Plays on top of all layers without interrupting them.
 var _music_stinger: AudioStreamPlayer
 
-@export_category("Lifecycle")
+# --- Lifecycle ---
 
 
 ## Initializes the audio system:
@@ -102,7 +102,7 @@ func _init_music_layers() -> void:
 	add_child(_music_stinger)
 
 
-@export_category("Registry Resolution")
+# --- Registry Resolution ---
 
 
 ## Builds the internal lookup table of all audio sets from all registries.
@@ -139,7 +139,7 @@ func _rebuild_index() -> void:
 				)
 
 
-@export_category("Voice Pool Initialization")
+# --- Voice Pool Initialization ---
 
 
 ## Creates per-bus pools of AudioStreamPlayers based on configured limits.
@@ -178,7 +178,7 @@ func _init_voice_pools() -> void:
 		_pool_3d[bus_name] = arr3
 
 
-@export_category("Bus Configuration")
+# --- Bus Configuration ---
 
 
 ## Returns a map of bus_name -> max_voices.
@@ -204,7 +204,7 @@ func _get_bus_limits() -> Dictionary:
 	return limits
 
 
-@export_category("Playback")
+# --- Playback ---
 
 
 ## Plays a non-positional (2D) one-shot sound by registry ID.
@@ -239,7 +239,7 @@ func play_follow(
 	)
 
 
-@export_category("Direct Playback")
+# --- Direct Playback ---
 
 ## Direct playback: play a sound resource without registering it.
 ## This lets a scene keep its own sounds next to it, e.g.
@@ -293,7 +293,7 @@ func play_sound_follow(
 	)
 
 
-@export_category("Playback Internals")
+# --- Playback Internals ---
 
 
 func _play_set_2d(audio_set: AudioSet, bus_name: StringName, vol_db_offset: float) -> void:
@@ -404,7 +404,7 @@ func _as_set(sound: Resource) -> AudioSet:
 	return wrapper
 
 
-@export_category("Music Playback")
+# --- Music Playback ---
 
 
 ## Starts or switches a looping music layer by ID, crossfading within that layer.
@@ -555,7 +555,7 @@ func music_stinger(id: StringName, vol_db_offset := 0.0) -> void:
 	_music_stinger.play()
 
 
-@export_category("Voice Pooling")
+# --- Voice Pooling ---
 
 
 ## Returns an available pooled 2D AudioStreamPlayer for a given bus.
@@ -622,7 +622,7 @@ func _get_voice_3d(bus_name: StringName) -> AudioStreamPlayer3D:
 	return oldest
 
 
-@export_category("Helpers")
+# --- Helpers ---
 
 
 ## Resolves an AudioSet by ID and warns if it does not exist.
@@ -703,7 +703,7 @@ func _kill_layer_tween(layer: StringName) -> void:
 	_music_layer_tweens.erase(layer)
 
 
-@export_category("Validation")
+# --- Validation ---
 
 
 ## Checks whether a given audio bus exists in the current AudioServer layout.

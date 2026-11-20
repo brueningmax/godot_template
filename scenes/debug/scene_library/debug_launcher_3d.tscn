@@ -49,6 +49,7 @@ layout_mode = 2
 text = "Back to Library"
 
 [node name="CameraControlCheck" type="CheckBox" parent="UILayer/MarginContainer/Control/VBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Enable Camera Controls"
 

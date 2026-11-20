@@ -1,6 +1,6 @@
 @tool
-extends Resource
 class_name AudioSet
+extends Resource
 
 @export_category("Identification")
 

@@ -1,5 +1,5 @@
-extends Control
 class_name UIButton
+extends Control
 
 signal pressed
 signal button_down
@@ -14,9 +14,9 @@ signal button_up
 	get:
 		return $Button.text
 
-@onready var btn: Button = $Button
-
 var base_pos := Vector2.ZERO
+
+@onready var btn: Button = $Button
 
 
 func _ready() -> void:

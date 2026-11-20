@@ -198,7 +198,7 @@ func _restart() -> void:
 func _quit_to_menu() -> void:
 	_clear_menus()
 	_set_paused(false)
-	SceneManager.change_scene(SceneRegistry.SceneKey.MainMenu, {}, true)
+	SceneManager.change_scene(SceneRegistry.SceneKey.MAIN_MENU, {}, true)
 
 
 func _on_scene_change_started(_to_scene_key: int) -> void:

@@ -8,13 +8,13 @@ extends Node
 ## Change the start flow by editing the exported values on Main.tscn.
 
 ## Scene to show after the (optional) splash.
-@export var start_scene: SceneRegistry.SceneKey = SceneRegistry.SceneKey.MainMenu
+@export var start_scene: SceneRegistry.SceneKey = SceneRegistry.SceneKey.MAIN_MENU
 
 ## Show an intermediate screen (logo, studio name...) before `start_scene`.
 @export var show_splash := true
 
 ## Which registered scene to use as the splash.
-@export var splash_scene: SceneRegistry.SceneKey = SceneRegistry.SceneKey.SplashScreen
+@export var splash_scene: SceneRegistry.SceneKey = SceneRegistry.SceneKey.SPLASH_SCREEN
 
 ## How long the splash stays up, in seconds (it can be skipped with any input).
 @export_range(0.0, 10.0, 0.1) var splash_time := 2.0

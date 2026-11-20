@@ -1,13 +1,8 @@
 @tool
-extends Resource
 class_name AudioBusConfig
+extends Resource
 
 @export_category("Bus Selection")
-
-## Name of the audio bus this configuration applies to.
-## The dropdown is populated from the current Audio Bus Layout (AudioServer).
-## This must match an existing bus name exactly.
-var bus_name: StringName = &"SFX"
 
 @export_category("Voice Limiting")
 
@@ -20,6 +15,11 @@ var bus_name: StringName = &"SFX"
 ## - Ambient: 2–4
 ## - Music: 1–2
 @export_range(0, 64, 1) var max_voices: int = 8
+
+## Name of the audio bus this configuration applies to.
+## The dropdown is populated from the current Audio Bus Layout (AudioServer).
+## This must match an existing bus name exactly.
+var bus_name: StringName = &"SFX"
 
 @export_category("Editor Integration")
 

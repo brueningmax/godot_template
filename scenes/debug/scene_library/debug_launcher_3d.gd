@@ -1,19 +1,18 @@
 extends Node3D
 
-@onready var back_button: Button = $UILayer/MarginContainer/Control/VBoxContainer/BackButton
-@onready
-var camera_control_check: CheckBox = $UILayer/MarginContainer/Control/VBoxContainer/CameraControlCheck
-@onready var stats_label: Label = $UILayer/MarginContainer/Control/StatsVBox/StatsLabel
-@onready var fps_bar: ProgressBar = $UILayer/MarginContainer/Control/StatsVBox/FPSBar
-@onready var camera_container: Node3D = $CameraContainer
-@onready var scene_container: Node3D = $SceneContainer
-@onready var directional_light: DirectionalLight3D = $DirectionalLight3D
-
 static var scene_to_launch: String = ""
 static var use_external_camera: bool = false
 
 var zoom_level: float = 10.0
 var is_orbiting: bool = false
+
+@onready var back_button: Button = $UILayer/MarginContainer/Control/VBoxContainer/BackButton
+@onready var camera_control_check: CheckBox = %CameraControlCheck
+@onready var stats_label: Label = $UILayer/MarginContainer/Control/StatsVBox/StatsLabel
+@onready var fps_bar: ProgressBar = $UILayer/MarginContainer/Control/StatsVBox/FPSBar
+@onready var camera_container: Node3D = $CameraContainer
+@onready var scene_container: Node3D = $SceneContainer
+@onready var directional_light: DirectionalLight3D = $DirectionalLight3D
 
 
 func _ready() -> void:
@@ -117,4 +116,4 @@ func _on_back_pressed() -> void:
 	# Reset FPS cap and VSync when leaving
 	Engine.max_fps = 0
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED)
-	SceneManager.change_scene(SceneRegistry.SceneKey.DebugViewer)
+	SceneManager.change_scene(SceneRegistry.SceneKey.DEBUG_VIEWER)

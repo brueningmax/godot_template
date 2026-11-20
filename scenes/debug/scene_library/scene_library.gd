@@ -1,5 +1,12 @@
 extends Control
 
+var selected_scene_path: String = ""
+var current_preview_instance: Node = null
+var is_orbiting: bool = false
+var orbit_camera: Camera3D = null
+var launched_scene_container: Node = null
+var launched_scene_instance: Node = null
+
 @onready var scene_tree: Tree = $HSplitContainer/TreePanel/VBox/SceneTree
 @onready
 var preview_viewport: SubViewport = $HSplitContainer/PreviewPanel/VBox/PreviewContainer/SubViewport
@@ -12,13 +19,6 @@ var no_preview_label: Label = $HSplitContainer/PreviewPanel/VBox/PreviewContaine
 
 @onready
 var preview_container: SubViewportContainer = $HSplitContainer/PreviewPanel/VBox/PreviewContainer
-
-var selected_scene_path: String = ""
-var current_preview_instance: Node = null
-var is_orbiting: bool = false
-var orbit_camera: Camera3D = null
-var launched_scene_container: Node = null
-var launched_scene_instance: Node = null
 
 
 func _ready() -> void:
@@ -217,4 +217,4 @@ func _on_back_pressed() -> void:
 		visible = true
 	else:
 		# Back to main menu
-		SceneManager.change_scene(SceneRegistry.SceneKey.MainMenu)
+		SceneManager.change_scene(SceneRegistry.SceneKey.MAIN_MENU)

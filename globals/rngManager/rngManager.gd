@@ -1,5 +1,5 @@
-extends Node
 class_name RNGManager
+extends Node
 
 # Human-readable seed (e.g. "3FA9C01E", or any text the player typed)
 var seed_string: String = ""

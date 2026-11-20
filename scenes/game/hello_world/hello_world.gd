@@ -1,6 +1,6 @@
 extends Node2D
 ## Minimal example game. Replace it with your own: register your scene under
-## SceneRegistry.SceneKey.GameScene, or point Main.tscn's start_scene at it.
+## SceneRegistry.SceneKey.GAME_SCENE, or point Main.tscn's start_scene at it.
 ##
 ## It shows the template's systems in use:
 ## - Input actions from project.godot (left/right/up/down, jump, pause)

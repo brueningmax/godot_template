@@ -1,11 +1,11 @@
 extends Control
 
+var _is_paused := false
+
 @onready var log_label: Label = $VBox/ScrollMsg/LogLabel
 @onready var btn_setting: Button = $VBox/Buttons/BtnTestChange
 @onready var btn_pause: Button = $VBox/Buttons/BtnTestPause
 @onready var btn_back: Button = $VBox/Buttons/BtnBack
-
-var _is_paused := false
 
 
 func _ready() -> void:

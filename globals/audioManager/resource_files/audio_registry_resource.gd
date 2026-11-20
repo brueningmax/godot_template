@@ -1,5 +1,5 @@
-extends Resource
 class_name AudioRegistry
+extends Resource
 
 @export_category("Identification")
 

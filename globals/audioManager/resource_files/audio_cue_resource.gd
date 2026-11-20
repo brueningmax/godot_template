@@ -1,5 +1,5 @@
-extends Resource
 class_name AudioCue
+extends Resource
 
 @export_category("Identification")
 
