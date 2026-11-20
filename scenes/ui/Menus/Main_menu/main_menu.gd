@@ -4,7 +4,7 @@ extends Control
 @onready var seed_input: LineEdit = $"MarginContainer/VBoxContainer/HBoxContainer/Seed Input"
 
 func _ready() -> void:
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	GameState.enter_menu()
 
 func _on_play_pressed() -> void:
 	# if the text is "", the RngManager will create a random seed
@@ -18,4 +18,4 @@ func _on_quit_pressed() -> void:
 	get_tree().quit()
 
 func _on_options_pressed() -> void:
-	pass # Replace with function body
+	GameState.open_settings()

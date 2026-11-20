@@ -5,9 +5,9 @@ extends Node
 ##   SignalBus.scene_change_finished.connect(_on_scene_change_finished)
 ##   SignalBus.pause_toggled.emit(true)
 ##
-## Keep this script free of references to SceneRegistry or game classes.
-## SignalBus is the first autoload: anything it references is compiled before
-## the other autoloads exist. That's why scene keys below are plain ints.
+## Never read SceneRegistry.SCENES from here (or from any script a registered
+## scene depends on): it preloads every scene, which creates a cyclic
+## reference. SceneRegistry.SceneKey is fine; keys below are ints for brevity.
 
 # --- Scenes -----------------------------------------------------------------
 
@@ -24,7 +24,10 @@ signal setting_changed(section: String, key: String, value: Variant)
 
 # --- Game state -------------------------------------------------------------
 
-## The game was paused or resumed.
+## GameState changed. Both values are GameState.State (MENU, PLAYING, PAUSED).
+signal game_state_changed(new_state: int, old_state: int)
+
+## The game was paused or resumed (emitted by GameState).
 signal pause_toggled(is_paused: bool)
 
 # --- Game -------------------------------------------------------------------

@@ -18,6 +18,7 @@ var launched_scene_container: Node = null
 var launched_scene_instance: Node = null
 
 func _ready() -> void:
+	GameState.enter_menu()
 	back_button.pressed.connect(_on_back_pressed)
 	launch_button.pressed.connect(_on_launch_pressed)
 	scene_tree.item_selected.connect(_on_item_selected)

@@ -16,9 +16,3 @@ func _ready() -> void:
 	btn_settings.pressed.connect(func(): settings_pressed.emit())
 	btn_restart.pressed.connect(func(): restart_pressed.emit())
 	btn_quit.pressed.connect(func(): quit_pressed.emit())
-
-func _unhandled_input(e: InputEvent) -> void:
-	if not visible: return
-	if e.is_action_pressed("pause"):
-		resume_pressed.emit()  # Esc = resume
-		accept_event()
