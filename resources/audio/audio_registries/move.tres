@@ -1,13 +1,13 @@
 [gd_resource type="Resource" script_class="AudioRegistry" format=3 uid="uid://blnf1xksw0ncq"]
 
-[ext_resource type="Script" uid="uid://4pdcacy5wdwh" path="res://globals/audioManager/resource_files/audio_set_resource.gd" id="1_j7rgs"]
-[ext_resource type="Script" uid="uid://dhl7176et7cb5" path="res://globals/audioManager/resource_files/audio_cue_resource.gd" id="2_dwdks"]
+[ext_resource type="Script" uid="uid://4pdcacy5wdwh" path="res://globals/audio_manager/resource_files/audio_set_resource.gd" id="1_j7rgs"]
+[ext_resource type="Script" uid="uid://dhl7176et7cb5" path="res://globals/audio_manager/resource_files/audio_cue_resource.gd" id="2_dwdks"]
 [ext_resource type="AudioStream" uid="uid://c0n10d4kodamj" path="res://assets/audio/steps/step1.ogg" id="3_12ca8"]
 [ext_resource type="AudioStream" uid="uid://dcug583nsclaa" path="res://assets/audio/steps/step2.ogg" id="4_ul746"]
 [ext_resource type="AudioStream" uid="uid://dtgp5lf1e2281" path="res://assets/audio/steps/step3.ogg" id="5_yed4k"]
 [ext_resource type="AudioStream" uid="uid://0f47o4d0ars" path="res://assets/audio/steps/step4.ogg" id="6_8v6u1"]
 [ext_resource type="AudioStream" uid="uid://vdsrlj52l0mi" path="res://assets/audio/steps/step5.ogg" id="7_evumf"]
-[ext_resource type="Script" uid="uid://c5o622e3a7njv" path="res://globals/audioManager/resource_files/audio_registry_resource.gd" id="8_6e8mm"]
+[ext_resource type="Script" uid="uid://c5o622e3a7njv" path="res://globals/audio_manager/resource_files/audio_registry_resource.gd" id="8_6e8mm"]
 
 [sub_resource type="Resource" id="Resource_e6xgn"]
 script = ExtResource("2_dwdks")

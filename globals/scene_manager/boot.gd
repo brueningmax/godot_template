@@ -1,11 +1,11 @@
 extends Node
-## Start-up flow of the full game. Attached to Main.tscn (the project's main scene).
+## Start-up flow of the full game. Attached to main.tscn (the project's main scene).
 ##
 ## This runs ONLY when the whole project is started (F5 / exported game).
 ## Running a single scene (F6, or "run current scene" in VS Code) never loads
-## Main.tscn, so that scene runs on its own without being sent to the menu.
+## main.tscn, so that scene runs on its own without being sent to the menu.
 ##
-## Change the start flow by editing the exported values on Main.tscn.
+## Change the start flow by editing the exported values on main.tscn.
 
 ## Scene to show after the (optional) splash.
 @export var start_scene: SceneRegistry.SceneKey = SceneRegistry.SceneKey.MAIN_MENU

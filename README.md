@@ -11,12 +11,12 @@ All systems are autoloads, available globally by name:
 
 | Autoload          | File                                            | Purpose                                                          |
 | ----------------- | ----------------------------------------------- | ---------------------------------------------------------------- |
-| `SignalBus`       | `globals/signalBus/signalBus.gd`                | Global signals for decoupled communication between systems.      |
-| `RngManager`      | `globals/rngManager/rngManager.gd`              | Seeded, reproducible random streams and order-independent rolls. |
-| `Audio`           | `globals/audioManager/audio_manager_node.tscn`  | Plays sounds by ID (`ui.click`) with pooling and music layers.   |
-| `SettingsManager` | `globals/settingsManager/settingsManager.gd`    | Loads, saves and applies user settings (`user://settings.cfg`).  |
-| `GameState`       | `globals/gameState/gameState.gd`                | Menu / playing / paused state; owns pause, the pause menu and mouse mode. |
-| `SceneManager`    | `globals/sceneManager/sceneManager.gd`          | Scene changes with fades and intermediate screens.               |
+| `SignalBus`       | `globals/signal_bus/signal_bus.gd`                | Global signals for decoupled communication between systems.      |
+| `RngManager`      | `globals/rng_manager/rng_manager.gd`              | Seeded, reproducible random streams and order-independent rolls. |
+| `Audio`           | `globals/audio_manager/audio_manager_node.tscn`  | Plays sounds by ID (`ui.click`) with pooling and music layers.   |
+| `SettingsManager` | `globals/settings_manager/settings_manager.gd`    | Loads, saves and applies user settings (`user://settings.cfg`).  |
+| `GameState`       | `globals/game_state/game_state.gd`                | Menu / playing / paused state; owns pause, the pause menu and mouse mode. |
+| `SceneManager`    | `globals/scene_manager/scene_manager.gd`          | Scene changes with fades and intermediate screens.               |
 
 There are also menus (main, pause, settings), a reusable `UIButton`, and a debug **scene library** that lists every scene in the project and can preview and launch it.
 
@@ -52,7 +52,7 @@ docs/        Documentation
 ## Documentation
 
 - **[Template guide](docs/TEMPLATE_GUIDE.md)**: how each system works, how to use it, and the non-obvious parts. Start here.
-- [Audio system](globals/audioManager/Readme.md): full reference for the audio manager.
+- [Audio system](globals/audio_manager/README.md): full reference for the audio manager.
 
 ## Roadmap
 

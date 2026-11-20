@@ -17,8 +17,8 @@ extends Node
 
 enum State { MENU, PLAYING, PAUSED }
 
-const PAUSE_MENU_SCENE := preload("res://scenes/ui/Menus/Pause_menu/pause_menu.tscn")
-const SETTINGS_MENU_SCENE := preload("res://scenes/ui/Menus/Settings_menu/settings_menu.tscn")
+const PAUSE_MENU_SCENE := preload("res://scenes/ui/menus/pause_menu/pause_menu.tscn")
+const SETTINGS_MENU_SCENE := preload("res://scenes/ui/menus/settings_menu/settings_menu.tscn")
 
 ## Below SceneManager's overlay (100), so scene fades cover open menus.
 const MENU_LAYER := 50

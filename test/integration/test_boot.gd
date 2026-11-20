@@ -1,7 +1,7 @@
 extends TemplateTest
-## Boot flow from Main.tscn (what F5 runs).
+## Boot flow from main.tscn (what F5 runs).
 
-const MAIN := preload("res://globals/sceneManager/Main.tscn")
+const MAIN := preload("res://globals/scene_manager/main.tscn")
 
 
 func test_boot_with_splash() -> void:

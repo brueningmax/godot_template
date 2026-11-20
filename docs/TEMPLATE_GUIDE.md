@@ -59,17 +59,17 @@ The last command is the cross-platform rename tool. It works on Windows too (`go
 F5 / exported game                        F6 / "run current scene"
 ──────────────────                        ────────────────────────
 autoloads _ready()                        autoloads _ready()
-Main.tscn (boot.gd)                       your scene, on its own
+main.tscn (boot.gd)                       your scene, on its own
   ├─ show_splash? ─ yes ─► SPLASH_SCREEN    (no boot, no menu, no redirect)
   │                          │ (timer or any input)
   └────── no ───────────────►┴► start_scene (MAIN_MENU)
                                  └─ Play ─► GAME_SCENE (hello_world)
 ```
 
-- **Full game (F5):** the main scene `globals/sceneManager/Main.tscn` runs `boot.gd`, which hands over to `SceneManager` and then removes itself. Change the start flow by selecting the root node of `Main.tscn` and editing its exports:
+- **Full game (F5):** the main scene `globals/scene_manager/main.tscn` runs `boot.gd`, which hands over to `SceneManager` and then removes itself. Change the start flow by selecting the root node of `main.tscn` and editing its exports:
   - `start_scene`: which `SceneKey` to start in, e.g. `GAME_SCENE` to skip the menu while developing.
   - `show_splash`, `splash_scene`, `splash_time`.
-- **Single scene (F6):** `Main.tscn` never loads, so the boot flow never runs, and the `SceneManager` autoload doesn't do anything on its own. Your scene runs exactly as it is. If it calls `SceneManager.change_scene()`, for example "back to menu", the manager takes the running scene over and replaces it normally.
+- **Single scene (F6):** `main.tscn` never loads, so the boot flow never runs, and the `SceneManager` autoload doesn't do anything on its own. Your scene runs exactly as it is. If it calls `SceneManager.change_scene()`, for example "back to menu", the manager takes the running scene over and replaces it normally.
 
 **Rule:** never put start-up navigation in an autoload's `_ready()`. Autoloads also run for F6, so it would redirect every scene you try to debug. Start-up navigation belongs in `boot.gd`.
 
@@ -90,7 +90,7 @@ Autoloads are created in the order listed in **Project Settings → Globals → 
 
 ## SignalBus
 
-`globals/signalBus/signalBus.gd`. Holds signals that several unrelated systems care about, so they don't need references to each other.
+`globals/signal_bus/signal_bus.gd`. Holds signals that several unrelated systems care about, so they don't need references to each other.
 
 ```gdscript
 # Listen
@@ -111,7 +111,7 @@ Always use this typed form, never `connect("name", ...)` or `emit_signal("name")
 
 **Bus or direct signal?** Use the bus when the emitter shouldn't know who listens and the listeners are unrelated: HUD, audio and achievements reacting to the same event, or anything global. Use a normal signal for parent/child communication, e.g. a button telling its menu it was pressed. Passing everything through the bus makes data flow hard to follow.
 
-**Adding a game signal:** put it in the `# --- Game ---` section of `signalBus.gd` with a `##` doc comment, which shows in the editor's help. Name it in the past tense, `noun_verbed`: `enemy_killed`, `card_played`, `level_completed`.
+**Adding a game signal:** put it in the `# --- Game ---` section of `signal_bus.gd` with a `##` doc comment, which shows in the editor's help. Name it in the past tense, `noun_verbed`: `enemy_killed`, `card_played`, `level_completed`.
 
 **Lifetime:** when a node is freed, Godot removes connections to its **methods** automatically, so `SignalBus.x.connect(_on_x)` needs no cleanup. **Lambdas are different.** A lambda stays connected until the object that *created* it is freed. If it only *captures* a node that is later freed, the next emit errors with "Lambda capture … was freed". From nodes that can be freed, connect methods, or disconnect lambdas in `_exit_tree()`.
 
@@ -119,7 +119,7 @@ Always use this typed form, never `connect("name", ...)` or `emit_signal("name")
 
 ## SettingsManager
 
-`globals/settingsManager/settingsManager.gd`. Holds user preferences in sections, persists them to `user://settings.cfg` and applies them to the engine.
+`globals/settings_manager/settings_manager.gd`. Holds user preferences in sections, persists them to `user://settings.cfg` and applies them to the engine.
 
 ```gdscript
 var vol: float = SettingsManager.get_setting("audio", "master_volume", 0.8)
@@ -139,14 +139,14 @@ Non-obvious behaviour:
 
 ### Settings menu
 
-`scenes/ui/Menus/Settings_menu/`, opened by **Options** in the main menu and **Settings** in the pause menu, both through `GameState.open_settings()`.
+`scenes/ui/menus/settings_menu/`, opened by **Options** in the main menu and **Settings** in the pause menu, both through `GameState.open_settings()`.
 
 - **Preview, Apply, Back:** every change applies immediately, so you hear and see it, but it isn't saved. **Apply** saves and closes. **Back** or Esc restores the values from when the menu opened.
 - The rows are built at runtime from the `ROWS` list at the top of `settings_menu.gd`.
 
 ### Adding a setting end to end
 
-1. **Default:** add the key to `DEFAULTS` in `settingsManager.gd`, e.g. `"display": {..., "max_fps": 0}`. Existing players get the default automatically.
+1. **Default:** add the key to `DEFAULTS` in `settings_manager.gd`, e.g. `"display": {..., "max_fps": 0}`. Existing players get the default automatically.
 2. **Apply:** handle the key in `_apply_display()` (or a new `_apply_<section>()` added to the `match` in `_apply_setting()`), e.g. `"max_fps": Engine.max_fps = value`.
 3. **Menu:** add one entry to `ROWS` in `settings_menu.gd`: `{section = "display", key = "max_fps", label = "FPS cap", type = RowType.SLIDER}`. Sliders currently cover 0–1. A different range or a dropdown needs a new `RowType`.
 
@@ -154,7 +154,7 @@ Non-obvious behaviour:
 
 ## RngManager
 
-`globals/rngManager/rngManager.gd` and `rngStream.gd`. All gameplay randomness should come from here, so a run can be reproduced from its seed.
+`globals/rng_manager/rng_manager.gd` and `rng_stream.gd`. All gameplay randomness should come from here, so a run can be reproduced from its seed.
 
 Everything derives from one human-readable `seed_string`. There are two ways to draw numbers:
 
@@ -187,7 +187,7 @@ All values are derived with 32-bit FNV-1a hashing of `seed + "|" + key`, so a gi
 
 ## GameState and pausing
 
-`globals/gameState/gameState.gd`. Tracks whether the player is in a menu, playing, or paused, and is the **only** code that sets `get_tree().paused` and `Input.mouse_mode`. It's also the only handler of the `pause` action.
+`globals/game_state/game_state.gd`. Tracks whether the player is in a menu, playing, or paused, and is the **only** code that sets `get_tree().paused` and `Input.mouse_mode`. It's also the only handler of the `pause` action.
 
 ```
              enter_menu()                  enter_gameplay(mouse_mode)
@@ -233,7 +233,7 @@ This works the same when the scene is run on its own (F6), because `GameState` i
 
 ## SceneManager and SceneRegistry
 
-`globals/sceneManager/sceneManager.gd` (autoload `SceneManager`, class `MainRoot`) and `scene_registry.gd` (class `SceneRegistry`, **not** an autoload).
+`globals/scene_manager/scene_manager.gd` (autoload `SceneManager`, class `MainRoot`) and `scene_registry.gd` (class `SceneRegistry`, **not** an autoload).
 
 Scenes are referred to by enum key, never by path:
 
@@ -244,7 +244,7 @@ SceneManager.change_scene_with_screen(SceneRegistry.SceneKey.MAIN_MENU, SceneReg
 SceneManager.reload_current()   # restart the current scene from its file
 ```
 
-To add a scene, add a value to `SceneKey` and an entry in `SCENES` in `scene_registry.gd`. Add new keys at the **end** of the enum: exported `SceneKey` values, e.g. `start_scene` on `Main.tscn`, are stored as numbers, so inserting a key in the middle shifts them.
+To add a scene, add a value to `SceneKey` and an entry in `SCENES` in `scene_registry.gd`. Add new keys at the **end** of the enum: exported `SceneKey` values, e.g. `start_scene` on `main.tscn`, are stored as numbers, so inserting a key in the middle shifts them.
 
 **Intermediate screens** (splash, "chapter 2" cards) are shown by `change_scene_with_screen()` for `screen_time` seconds. To make a screen skippable, give its root script a `signal skipped` and emit it, e.g. on any input. The manager listens from the moment the screen is added, so a skip during its fade-in also counts. `scenes/ui/splash_screen/splash_screen.gd` is the example.
 
@@ -264,7 +264,7 @@ Non-obvious behaviour:
 
 ## Audio
 
-`globals/audioManager/`. The full reference is the [audio system README](../globals/audioManager/Readme.md). In short:
+`globals/audio_manager/`. The full reference is the [audio system README](../globals/audio_manager/README.md). In short:
 
 ```gdscript
 Audio.play(&"ui.click")
@@ -274,7 +274,7 @@ Audio.music_layer_to(&"base", &"music.flow.base", 1.5)
 
 There are two ways to refer to a sound.
 
-**By ID:** for shared sounds used in many places (UI clicks, footsteps). An ID is `<registry namespace>.<set id>`, plus `.<cue id>` to address a single named variation. Registries are `.tres` files in `resources/audio/audioRegistries/`. To use one, add it to the `registries` array on `audio_manager_node.tscn`.
+**By ID:** for shared sounds used in many places (UI clicks, footsteps). An ID is `<registry namespace>.<set id>`, plus `.<cue id>` to address a single named variation. Registries are `.tres` files in `resources/audio/audio_registries/`. To use one, add it to the `registries` array on `audio_manager_node.tscn`.
 
 **By direct reference:** for sounds that belong to one scene. Keep the files next to the scene and play the resource itself, with no registry entry:
 
@@ -309,7 +309,7 @@ Gotchas:
 
 ## Menus and UI
 
-- **`MenuBase`** (`scenes/ui/Menus/menu_base.gd`): base class for menus. `open()` / `close()` fade the menu in and out, and the tweens keep running while the game is paused. Set `default_focus` so keyboard and controller users land on a control. Override `_on_open()` / `_on_close()` for menu-specific behaviour.
+- **`MenuBase`** (`scenes/ui/menus/menu_base.gd`): base class for menus. `open()` / `close()` fade the menu in and out, and the tweens keep running while the game is paused. Set `default_focus` so keyboard and controller users land on a control. Override `_on_open()` / `_on_close()` for menu-specific behaviour.
 - **`UIButton`** (`scenes/ui/components/ui_button/`): a `Button` wrapper with a hover lift and `ui.hover` / `ui.click` sounds through `Audio`. Set its label with the `text` property. Listen to the wrapper's `pressed` / `button_down` / `button_up` signals, not the inner button's. Hover also triggers on keyboard/controller focus, so focusing a button plays `ui.hover`.
 
 **Making a new menu:**

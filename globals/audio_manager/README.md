@@ -26,9 +26,9 @@ A reusable, data-driven audio system with a clear separation between content, ro
 ## Files
 
 ```
-globals/audioManager/
+globals/audio_manager/
   audio_manager_node.tscn        # the autoload (assign registries here)
-  audioManager.gd
+  audio_manager.gd
   resource_files/
     audio_registry_resource.gd   # AudioRegistry
     audio_set_resource.gd        # AudioSet
@@ -36,14 +36,14 @@ globals/audioManager/
     audio_bus_config.gd          # AudioBusConfig
 resources/audio/
   bus_layout.tres                # project default bus layout
-  audioRegistries/*.tres         # content
+  audio_registries/*.tres         # content
 ```
 
 ## Setup in a new project
 
 This template already has all of this set up. The steps are for copying the system into another project.
 
-1. **Copy** `globals/audioManager/` into the project.
+1. **Copy** `globals/audio_manager/` into the project.
 2. **Create a bus layout:** open the **Audio** panel at the bottom of the editor and add buses, e.g. `UI`, `SFX`, `Ambient`, `Music`. Save it as `resources/audio/bus_layout.tres` and assign it in **Project Settings → Audio → Buses → Default Bus Layout**. Bus names are plain strings and must match exactly.
 3. **Autoload** `audio_manager_node.tscn` with the name `Audio` (**Project Settings → Globals → Autoload**).
 

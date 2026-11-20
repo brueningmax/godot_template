@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cjlf461itihrh"]
 
-[ext_resource type="Script" uid="uid://b2tgd754bhwr6" path="res://scenes/ui/Menus/Main_menu/main_menu.gd" id="1_w4x4f"]
+[ext_resource type="Script" uid="uid://b2tgd754bhwr6" path="res://scenes/ui/menus/main_menu/main_menu.gd" id="1_w4x4f"]
 [ext_resource type="PackedScene" uid="uid://bv8jq6yowvfn3" path="res://scenes/ui/components/ui_button/ui_button.tscn" id="2_78loy"]
 
 [node name="MainMenu" type="Control" unique_id=1727752387]
