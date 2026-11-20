@@ -119,7 +119,7 @@ func _rebuild_index() -> void:
 
 		for id in map.keys():
 			if _sets.has(id):
-				push_warning("AudioManager: duplicate audio id '%s' (keeping first)" % [id])
+				Log.warn(&"Audio", "duplicate audio id '%s' (keeping first)" % [id])
 				continue
 
 			var audio_set: AudioSet = map[id]
@@ -131,11 +131,8 @@ func _rebuild_index() -> void:
 				and audio_set.bus_name != StringName()
 				and not _bus_exists(audio_set.bus_name)
 			):
-				push_warning(
-					(
-						"AudioManager: AudioSet '%s' references missing bus '%s'"
-						% [id, audio_set.bus_name]
-					)
+				Log.warn(
+					&"Audio", "AudioSet '%s' references missing bus '%s'" % [id, audio_set.bus_name]
 				)
 
 
@@ -379,7 +376,7 @@ func _play_set_follow(
 ## every sound ever passed in loaded for the lifetime of the game.
 func _as_set(sound: Resource) -> AudioSet:
 	if sound == null:
-		push_warning("AudioManager: play_sound* called with null")
+		Log.warn(&"Audio", "play_sound* called with null")
 		return null
 	if sound is AudioSet:
 		return sound
@@ -390,11 +387,9 @@ func _as_set(sound: Resource) -> AudioSet:
 		cue = AudioCue.new()
 		cue.stream = sound
 	else:
-		push_warning(
-			(
-				"AudioManager: play_sound* expects AudioStream, AudioCue or AudioSet, got %s"
-				% sound.get_class()
-			)
+		Log.warn(
+			&"Audio",
+			"play_sound* expects AudioStream, AudioCue or AudioSet, got %s" % sound.get_class()
 		)
 		return null
 
@@ -629,7 +624,7 @@ func _get_voice_3d(bus_name: StringName) -> AudioStreamPlayer3D:
 func _get_set_or_warn(id: StringName) -> AudioSet:
 	var audio_set: AudioSet = _sets.get(id)
 	if audio_set == null:
-		push_warning("AudioManager: unknown id '%s'" % [id])
+		Log.warn(&"Audio", "unknown id '%s'" % [id])
 	return audio_set
 
 

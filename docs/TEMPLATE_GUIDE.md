@@ -6,21 +6,22 @@ How the template's systems work, how to use them, and what isn't obvious from th
 
 ## Contents
 
-0. [Starting a new game from the template](#starting-a-new-game-from-the-template)
-1. [Overview and boot flow](#overview-and-boot-flow)
-2. [Autoloads](#autoloads)
-3. [SignalBus](#signalbus)
-4. [SettingsManager](#settingsmanager)
-5. [RngManager](#rngmanager)
-6. [GameState and pausing](#gamestate-and-pausing)
-6. [SceneManager and SceneRegistry](#scenemanager-and-sceneregistry)
-7. [Audio](#audio)
-8. [Menus and UI](#menus-and-ui)
-9. [Debug tools](#debug-tools)
-10. [Debugging in VS Code](#debugging-in-vs-code)
-11. [Testing](#testing)
-12. [CI and releases](#ci-and-releases)
-13. [Conventions](#conventions)
+1. [Starting a new game from the template](#starting-a-new-game-from-the-template)
+2. [Overview and boot flow](#overview-and-boot-flow)
+3. [Autoloads](#autoloads)
+4. [Logging](#logging)
+5. [SignalBus](#signalbus)
+6. [SettingsManager](#settingsmanager)
+7. [RngManager](#rngmanager)
+8. [GameState and pausing](#gamestate-and-pausing)
+9. [SceneManager and SceneRegistry](#scenemanager-and-sceneregistry)
+10. [Audio](#audio)
+11. [Menus and UI](#menus-and-ui)
+12. [Debug tools](#debug-tools)
+13. [Debugging in VS Code](#debugging-in-vs-code)
+14. [Testing](#testing)
+15. [CI and releases](#ci-and-releases)
+16. [Conventions](#conventions)
 
 ---
 
@@ -79,14 +80,61 @@ The **hello-world scene** (`scenes/game/hello_world/`) is a placeholder game sho
 
 Autoloads are created in the order listed in **Project Settings → Globals → Autoload**, and each one's `_ready()` runs in that order:
 
-1. `SignalBus`: first, because other autoloads emit on it from their `_ready()`.
-2. `RngManager`
-3. `Audio`: a **scene** (`audio_manager_node.tscn`), not a script, so its registries can be assigned in the inspector.
-4. `SettingsManager`: loads `user://settings.cfg` and applies volumes, so it must come after the audio bus layout is active (always true) and after `SignalBus`.
-5. `GameState`
-6. `SceneManager`
+1. `Log`: first, so every other autoload can log from its `_ready()`. It depends on nothing.
+2. `SignalBus`: before the rest, because they emit on it from their `_ready()`.
+3. `RngManager`
+4. `Audio`: a **scene** (`audio_manager_node.tscn`), not a script, so its registries can be assigned in the inspector.
+5. `SettingsManager`: loads `user://settings.cfg` and applies volumes, so it must come after the audio bus layout is active (always true) and after `SignalBus`.
+6. `GameState`
+7. `SceneManager`
 
 **Gotcha:** an autoload's name and its script's `class_name` must not be the same, or the global is ambiguous. That's why the scene manager's script is `class_name MainRoot` while the autoload is called `SceneManager`.
+
+## Logging
+
+`globals/log/log.gd`, autoload `Log`. Use it instead of `print()`, `push_warning()` and `push_error()` in game code.
+
+```gdscript
+Log.debug(&"Cards", "drew %s" % card.id)
+Log.info(&"Scene", "changed to %s" % scene.name)
+Log.warn(&"Audio", "unknown id '%s'" % id)
+Log.error(&"Save", "can't write %s" % path)
+```
+
+The output looks like `[12:03:04.123] [WARN ] [Audio] unknown id 'ui.x'`. The category is any short name, usually the system or feature (`Scene`, `Audio`, `Cards`).
+
+**Where messages go:**
+
+| Level | Sent with | Effect |
+| --- | --- | --- |
+| `debug`, `info` | `print()` | Output panel, terminal, log file |
+| `warn` | `push_warning()` | also yellow in the **Debugger → Errors** tab, with a backtrace |
+| `error` | `push_error()` | also red in the Debugger, **fails GUT tests** unless asserted, **fails CI** (`ERROR:` lines) |
+
+Because messages go through Godot's own functions, Godot's **log file** gets them too: `user://logs/godot.log`, the newest 5 runs kept (Project Settings → Debug → File Logging). `user://` is `%APPDATA%\Godot\app_userdata\<project name>\` on Windows, `~/Library/Application Support/Godot/app_userdata/<project name>/` on macOS and `~/.local/share/godot/app_userdata/<project name>/` on Linux.
+
+**Levels and filtering:**
+
+- `debug` and `info` can be filtered; `warn` and `error` are **always** logged, so problems can't be hidden by accident.
+- The default minimum level is `DEBUG` in debug builds and `INFO` in release builds (`Log.min_level`).
+- Per category: `Log.set_level(&"Audio", Log.Level.WARN)` (quieter) or `Log.Level.DEBUG` (louder); `Log.clear_level(&"Audio")` undoes it.
+- From the command line, after `--`, without changing code:
+  ```bash
+  godot -- --log-level=info
+  ```
+  ```bash
+  godot -- --log=Audio:debug,Scene:warn
+  ```
+  In VS Code, put the same options in a launch configuration's `additional_options`. Unknown options are reported as a warning.
+- To avoid building an expensive message that would be filtered out, check first: `if Log.is_enabled(Log.Level.DEBUG, &"AI"): Log.debug(&"AI", _dump_state())`.
+
+**Recent messages (for in-game consoles):** `Log.recent(n)` returns the last entries, up to 200, oldest first, as dictionaries with `level`, `category`, `message`, `time` and `text`. `Log.message_logged(entry)` fires for each new one, always on the main thread. The buffer also captures **engine** errors and warnings (category `Engine`), e.g. "Cannot open file …" or script runtime errors, so a console shows everything that went wrong, not just what game code logged.
+
+Gotchas:
+
+- In tests, an intended `Log.error()` must be asserted like any `push_error`: `assert_push_error("text")`.
+- `Log` is the first autoload and must stay free of references to other autoloads. Its signal lives on `Log` itself, not on `SignalBus`, which loads after it.
+- The template's own systems log as `Scene`, `Audio`, `Settings` and `GameState`. The full game logs one `info` line per scene change.
 
 ## SignalBus
 
@@ -333,7 +381,7 @@ Gotchas:
 
 Gotcha: previewing **instantiates** the scene, so its `_ready()` runs, along with any side effects (sounds, autoload calls, changing the mouse mode).
 
-> Planned: a debug overlay and console are tracked in [#20](https://github.com/brueningmax/godot_template/issues/20), and logging in [#19](https://github.com/brueningmax/godot_template/issues/19).
+> Planned: a debug overlay and console are tracked in [#20](https://github.com/brueningmax/godot_template/issues/20). It will show `Log.recent()`, see [Logging](#logging).
 
 ### Script checker
 

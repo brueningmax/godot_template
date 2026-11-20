@@ -235,4 +235,5 @@ func _set_state(new_state: State) -> void:
 		return
 	var old := state
 	state = new_state
+	Log.debug(&"GameState", "%s -> %s" % [State.keys()[old], State.keys()[new_state]])
 	SignalBus.game_state_changed.emit(new_state, old)

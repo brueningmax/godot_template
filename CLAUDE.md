@@ -29,6 +29,7 @@ gdformat . && gdlint .
 
 - Never set `get_tree().paused` or `Input.mouse_mode` outside `GameState`.
 - Never read `SceneRegistry.SCENES` outside `SceneManager` (cyclic reference: it preloads every scene).
+- Never use `print()`, `push_warning()` or `push_error()` in game code; use `Log.debug/info/warn/error(&"Category", "…")` (tools in `tools/` may print). In tests, assert intended `Log.error()` calls with `assert_push_error()`.
 - Never use string-based signals (`connect("name", …)`, `emit_signal("name")`). Use `SignalBus.name.connect(…)`.
 - Never edit files in `addons/` (vendored third-party code).
 - Never commit `.godot/`, `export_credentials.cfg` or anything under `build/`.
