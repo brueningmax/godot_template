@@ -1,25 +1,44 @@
 {
+    // Godot debugging with the godot-tools extension (geequlim.godot-tools, 2.x).
+    // Set the Godot 4 executable once in your VS Code *User* settings:
+    //   "godotTools.editorPath.godot4": "C:/path/to/Godot_v4.7-stable_win64.exe"
+    // See docs/TEMPLATE_GUIDE.md -> "Debugging in VS Code".
+    //
+    // "port" is the debugger port VS Code listens on and the game connects to.
+    // 6010 instead of the default 6007, because an open Godot editor already
+    // listens on 6007 for its own debugger.
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Godot: Run Project",
+            "name": "Godot: Run game",
             "type": "godot",
             "request": "launch",
             "project": "${workspaceFolder}",
-            "port": 6006,
-            "debugServer": 6006,
-            "address": "127.0.0.1",
-            "launch_game_instance": true,
-            "launch_scene": false
+            "scene": "main",
+            "port": 6010
+        },
+        {
+            "name": "Godot: Run current scene",
+            "type": "godot",
+            "request": "launch",
+            "project": "${workspaceFolder}",
+            "scene": "current",
+            "port": 6010
+        },
+        {
+            "name": "Godot: Run pinned scene",
+            "type": "godot",
+            "request": "launch",
+            "project": "${workspaceFolder}",
+            "scene": "pinned",
+            "port": 6010
         },
         {
             "name": "Godot: Attach",
             "type": "godot",
             "request": "attach",
-            "project": "${workspaceFolder}",
             "address": "127.0.0.1",
-            "port": 6006,
-            "debugServer": 6006
+            "port": 6010
         }
     ]
 }

@@ -316,7 +316,40 @@ Use it instead of `godot --check-only --script file.gd`. That mode doesn't creat
 
 ## Debugging in VS Code
 
-> Planned: [#5](https://github.com/brueningmax/godot_template/issues/5).
+The template is set up for the **godot-tools** extension (`geequlim.godot-tools`, version 2.x). VS Code launches the game itself and acts as its debugger: breakpoints, stepping, the call stack, variables, and `print()` output in the Debug Console. The Godot editor doesn't need to be open for debugging.
+
+### One-time setup
+
+1. Install the recommended extension. VS Code offers it when you open the folder; it's listed in `.vscode/extensions.json`.
+2. Set your Godot 4 executable in your VS Code **User** settings (Ctrl+, → User → search "godot editor path"):
+   ```json
+   "godotTools.editorPath.godot4": "C:/Tools/Godot/Godot_v4.7-stable_win64.exe"
+   ```
+   Don't put it in the workspace `.vscode/settings.json`. That file is committed, and a workspace value overrides every developer's own path.
+3. Optional, so the Godot editor opens scripts in VS Code: in Godot go to **Editor Settings → Text Editor → External**, enable **Use External Editor**, set **Exec Path** to VS Code, and set **Exec Flags** to `{project} --goto {file}:{line}:{col}`. Also enable **Text Editor → Behavior → Files → Auto Reload Scripts on External Change**.
+
+### Configurations (Run and Debug panel)
+
+| Configuration | Runs | Use it for |
+| --- | --- | --- |
+| **Godot: Run game** | the main scene, so the full [boot flow](#overview-and-boot-flow) | Playing through splash → menu → game. |
+| **Godot: Run current scene** | the scene open in the editor (or the scene belonging to the open `.gd`) | Debugging one scene. Like F6: no boot flow and no menu redirect. Works for scenes in subfolders. |
+| **Godot: Run pinned scene** | the scene you pinned with the extension's "Pin scene" command | Repeatedly launching one scene while editing other files. |
+| **Godot: Attach** | nothing; connects to a game that's already running | A game started with `--remote-debug tcp://127.0.0.1:6010`. |
+
+### Language server (completion, go-to-definition)
+
+The language server is provided by the **Godot editor**, so keep the project open in Godot. `.vscode/settings.json` sets `godotTools.lsp.serverPort` to **6005**, the Godot editor's default (**Editor Settings → Network → Language Server → Remote Port**). If you change one, change both.
+
+Alternatively, set `"godotTools.lsp.headless": true` in your User settings, and the extension starts its own windowless Godot for the language server.
+
+### Pitfalls
+
+- **Port 6007 clash:** the Godot editor's own debugger listens on 6007, the extension's default. The template's configurations use **6010** so they work with the editor open. Keep it that way if you add configurations.
+- **No completion / "Couldn't connect to the GDScript language server":** the Godot editor isn't running, or the LSP ports don't match (see above).
+- **"Run current scene" ran the wrong thing:** it uses the file focused in VS Code. Focus the `.tscn`, or the `.gd` attached to it, before pressing F5.
+- **Breakpoints in `@tool` scripts** only trigger in the running game, not while the script runs in the editor.
+- Autoloads run for every configuration, including the single-scene ones, which is why start-up navigation lives in `boot.gd` and not in an autoload.
 
 ## Testing
 

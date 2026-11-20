@@ -1,3 +1,19 @@
 {
-    "godotTools.editorPath.godot4": "E:/SteamLibrary/steamapps/common/Godot Engine/godot.windows.opt.tools.64.exe"
+    // Shared workspace settings. Do NOT put machine-specific paths here.
+    // The Godot executable goes in your VS Code *User* settings:
+    //   "godotTools.editorPath.godot4": "/path/to/godot"
+
+    // The Godot 4 editor serves its language server on 6005
+    // (Editor Settings > Network > Language Server > Remote Port).
+    // The extension's default is 6008, so they wouldn't connect.
+    "godotTools.lsp.serverPort": 6005,
+
+    "files.exclude": {
+        "**/.godot": true,
+        "**/*.uid": true
+    },
+    "[gdscript]": {
+        "editor.insertSpaces": false,
+        "editor.tabSize": 4
+    }
 }
