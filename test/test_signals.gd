@@ -32,8 +32,8 @@ func _ready() -> void:
 			SceneManager.goto_menu()
 	)
 
-func _on_setting_changed(key: String, val: Variant) -> void:
-	_log("SIGNAL RECV: setting_changed -> %s: %s" % [key, str(val)])
+func _on_setting_changed(section: String, key: String, val: Variant) -> void:
+	_log("SIGNAL RECV: setting_changed -> %s:%s = %s" % [section, key, str(val)])
 
 func _on_pause_toggled(p: bool) -> void:
 	_log("SIGNAL RECV: pause_toggled -> %s" % str(p))

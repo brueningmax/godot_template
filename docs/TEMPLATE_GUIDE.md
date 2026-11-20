@@ -62,16 +62,27 @@ Autoloads are created in the order listed in **Project Settings → Globals → 
 
 ```gdscript
 # Listen
-SignalBus.setting_changed.connect(_on_setting_changed)
+SignalBus.scene_change_finished.connect(_on_scene_change_finished)
 # Emit
 SignalBus.pause_toggled.emit(true)
 ```
 
-Prefer the typed `.connect()` / `.emit()` form shown above. A typo in a signal name then fails when the script is parsed, not at runtime.
+Always use this typed form, never `connect("name", ...)` or `emit_signal("name")`. A typo then fails when the script is parsed instead of silently doing nothing.
 
-There's also a string-based `subscribe(signal_name, target, method)` that disconnects automatically when `target` leaves the tree. Avoid it in new code.
+| Signal | Emitted by | Arguments |
+| --- | --- | --- |
+| `scene_change_started` | `SceneManager` | `to_scene_key: int` (a `SceneRegistry.SceneKey`) |
+| `scene_change_finished` | `SceneManager` | `new_scene: Node` |
+| `setting_changed` | `SettingsManager.set_setting()` | `section, key, value` |
+| `pause_toggled` | (game code; see [#23](https://github.com/brueningmax/godot_template/issues/23)) | `is_paused: bool` |
 
-> Planned: typed-only conventions and naming rules are tracked in [#21](https://github.com/brueningmax/godot_template/issues/21).
+**Bus or direct signal?** Use the bus when the emitter shouldn't know who listens and the listeners are unrelated: HUD, audio and achievements reacting to the same event, or anything global. Use a normal signal for parent/child communication, e.g. a button telling its menu it was pressed. Passing everything through the bus makes data flow hard to follow.
+
+**Adding a game signal:** put it in the `# --- Game ---` section of `signalBus.gd` with a `##` doc comment, which shows in the editor's help. Name it in the past tense, `noun_verbed`: `enemy_killed`, `card_played`, `level_completed`.
+
+**Lifetime:** when a node is freed, Godot removes connections to its **methods** automatically, so `SignalBus.x.connect(_on_x)` needs no cleanup. **Lambdas are different.** A lambda stays connected until the object that *created* it is freed. If it only *captures* a node that is later freed, the next emit errors with "Lambda capture … was freed". From nodes that can be freed, connect methods, or disconnect lambdas in `_exit_tree()`.
+
+**Trap: keep `signalBus.gd` free of references to `SceneRegistry` or game classes.** `SignalBus` is the first autoload, so whatever it references is compiled before the other autoloads exist. `SceneRegistry` `preload()`s every scene, so referencing it would compile every scene script too early, and they'd all fail with "Identifier not found: Audio" etc. That's why scene keys on the bus are typed as `int`.
 
 ## SettingsManager
 
@@ -86,7 +97,7 @@ Non-obvious behaviour:
 
 - **Defaults live in the `_settings` dictionary** at the top of the script. On load, values from the file are merged over the defaults, so new keys you add to the dictionary appear automatically for existing players.
 - **`set_setting()` applies and saves immediately**, writing the whole file on every call. Don't call it every frame, e.g. from a slider's `value_changed` while dragging, if that matters to you.
-- It then emits `SignalBus.setting_changed` with the key as **`"section:key"`**, e.g. `"audio:master_volume"`.
+- It then emits `SignalBus.setting_changed(section, key, value)`.
 - Only the `audio` and `display` sections are applied to the engine. Other sections are stored and saved, but you have to apply them yourself.
 - Volumes are **linear 0–1**. They're converted to dB, and the bus is muted at ≤ 0.001.
 - `fullscreen` defaults to `true`, which uses exclusive fullscreen.
@@ -150,7 +161,9 @@ Non-obvious behaviour:
 - Intermediate screens (splash, loading) are added to the manager's `Overlay` CanvasLayer (layer 100), above the game.
 - Every scene in `SCENES` is `preload()`ed, so all of them load at startup.
 
-> Planned: lazy, threaded loading with a loading screen is tracked in [#22](https://github.com/brueningmax/godot_template/issues/22). Bus signals are tracked in [#21](https://github.com/brueningmax/godot_template/issues/21).
+- Every change emits `SignalBus.scene_change_started` / `scene_change_finished`, and `SceneManager.scene_changed`.
+
+> Planned: lazy, threaded loading with a loading screen is tracked in [#22](https://github.com/brueningmax/godot_template/issues/22).
 
 ## Audio
 

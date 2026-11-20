@@ -34,8 +34,8 @@ func _on_play_sound_pressed() -> void:
 	else:
 		_log("Error: Audio manager not found")
 
-func _on_external_setting_change(key: String, val: Variant) -> void:
-	_log("External: %s -> %s" % [key, str(val)])
+func _on_external_setting_change(section: String, key: String, val: Variant) -> void:
+	_log("External: %s:%s -> %s" % [section, key, str(val)])
 
 func _log(msg: String) -> void:
 	log_label.text = "Log: " + msg

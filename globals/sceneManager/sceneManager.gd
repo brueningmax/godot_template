@@ -46,7 +46,7 @@ func change_scene(scene_key: SceneRegistry.SceneKey, payload: Dictionary = {}, u
 		_changing = false
 		return
 
-	_emit_signal_bus("scene_change_started", scene_key)
+	SignalBus.scene_change_started.emit(scene_key)
 	_adopt_standalone_scene()
 
 	if use_fade:
@@ -65,8 +65,8 @@ func change_scene(scene_key: SceneRegistry.SceneKey, payload: Dictionary = {}, u
 		await _fade_in(DEFAULT_FADE_DURATION)
 
 	_apply_payload(current_scene, payload)
-	emit_signal("scene_changed", current_scene)
-	_emit_signal_bus("scene_change_finished", current_scene)
+	scene_changed.emit(current_scene)
+	SignalBus.scene_change_finished.emit(current_scene)
 	_changing = false
 
 
@@ -81,7 +81,7 @@ func change_scene_with_screen(next_key: SceneRegistry.SceneKey, screen_key: Scen
 		_changing = false
 		return
 
-	_emit_signal_bus("scene_change_started", next_key)
+	SignalBus.scene_change_started.emit(next_key)
 	_adopt_standalone_scene()
 
 	if current_scene:
@@ -117,8 +117,8 @@ func change_scene_with_screen(next_key: SceneRegistry.SceneKey, screen_key: Scen
 
 	await _fade_in(DEFAULT_FADE_DURATION)
 	_apply_payload(current_scene, payload)
-	emit_signal("scene_changed", current_scene)
-	_emit_signal_bus("scene_change_finished", current_scene)
+	scene_changed.emit(current_scene)
+	SignalBus.scene_change_finished.emit(current_scene)
 	_changing = false
 
 
@@ -175,10 +175,6 @@ func _finish_screen(token: int) -> void:
 func _apply_payload(scene: Node, payload: Dictionary) -> void:
 	if not payload.is_empty() and scene.has_method("apply_payload"):
 		scene.call_deferred("apply_payload", payload)
-
-func _emit_signal_bus(signal_name: String, arg) -> void:
-	if "SignalBus" in get_tree().root:
-		get_tree().root.get_node("SignalBus").emit_signal(signal_name, arg)
 
 func _fade_out(dur: float) -> void:
 	fade_rect.visible = true
