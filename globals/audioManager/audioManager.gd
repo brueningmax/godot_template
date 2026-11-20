@@ -204,51 +204,23 @@ func _get_bus_limits() -> Dictionary:
 
 @export_category("Playback")
 
-## Plays a non-positional (2D) one-shot sound.
+## Plays a non-positional (2D) one-shot sound by registry ID.
 ## Intended for UI, global feedback, and non-spatial SFX.
 func play(id: StringName, vol_db_offset := 0.0) -> void:
 	var audio_set := _get_set_or_warn(id)
-	if audio_set == null:
-		return
-
-	var cue := audio_set.pick()
-	if cue == null or cue.stream == null:
-		return
-
-	var bus_name := _resolve_bus(audio_set)
-	var p := _get_voice_2d(bus_name)
-	if p == null:
-		return
-
-	_apply_cue_to_player_2d(p, bus_name, cue, vol_db_offset)
-	p.play()
-	_started_at_msec[p.get_instance_id()] = Time.get_ticks_msec()
+	if audio_set != null:
+		_play_set_2d(audio_set, _resolve_bus(audio_set), vol_db_offset)
 
 
-## Plays a positional (3D) one-shot sound at a world position.
+## Plays a positional (3D) one-shot sound by registry ID at a world position.
 ## Intended for impacts, pickups, explosions, etc.
 func play_at(id: StringName, world_pos: Vector3, vol_db_offset := 0.0) -> void:
 	var audio_set := _get_set_or_warn(id)
-	if audio_set == null:
-		return
-
-	var cue := audio_set.pick()
-	if cue == null or cue.stream == null:
-		return
-
-	var bus_name := _resolve_bus(audio_set)
-	var p := _get_voice_3d(bus_name)
-	if p == null:
-		return
-
-	_apply_cue_to_player_3d(p, bus_name, cue, vol_db_offset)
-	p.global_position = world_pos
-	p.play()
-
-	_started_at_msec_3d[p.get_instance_id()] = Time.get_ticks_msec()
+	if audio_set != null:
+		_play_set_3d(audio_set, _resolve_bus(audio_set), world_pos, vol_db_offset)
 
 
-## Plays a 3D sound that follows a Node3D.
+## Plays a 3D sound by registry ID that follows a Node3D.
 ## Intended for persistent emitters like machine hums or wind sources.
 ##
 ## Returns the AudioStreamPlayer3D so callers can stop or tweak it later.
@@ -259,11 +231,101 @@ func play_follow(
 	vol_db_offset := 0.0,
 	autoplay := true
 ) -> AudioStreamPlayer3D:
-	if sound_owner == null:
-		return null
-
 	var audio_set := _get_set_or_warn(id)
 	if audio_set == null:
+		return null
+	return _play_set_follow(audio_set, StringName(id), _resolve_bus(audio_set), sound_owner, vol_db_offset, autoplay)
+
+
+@export_category("Direct Playback")
+
+## Direct playback: play a sound resource without registering it.
+## This lets a scene keep its own sounds next to it, e.g.
+##   res://scenes/enemies/wolf/howl.ogg
+## and play them with:
+##   const HOWL := preload("howl.ogg")
+##   Audio.play_sound(HOWL)
+##
+## `sound` may be:
+## - AudioStream (.ogg / .wav / .mp3): played as-is.
+## - AudioCue: uses its volume trim, pitch and random pitch.
+## - AudioSet: picks one of its variations (no immediate repeats), and uses
+##   its bus unless `bus` is given.
+##
+## `bus` defaults to the AudioSet's bus, or "SFX" for streams and cues.
+## Direct sounds share the same per-bus voice pools and limits as ID-based ones.
+
+## 2D (non-positional) one-shot from a resource.
+func play_sound(sound: Resource, vol_db_offset := 0.0, bus: StringName = &"") -> void:
+	var audio_set := _as_set(sound)
+	if audio_set != null:
+		_play_set_2d(audio_set, _resolve_bus(audio_set, bus), vol_db_offset)
+
+
+## 3D one-shot from a resource at a world position.
+func play_sound_at(sound: Resource, world_pos: Vector3, vol_db_offset := 0.0, bus: StringName = &"") -> void:
+	var audio_set := _as_set(sound)
+	if audio_set != null:
+		_play_set_3d(audio_set, _resolve_bus(audio_set, bus), world_pos, vol_db_offset)
+
+
+## 3D sound from a resource that follows a Node3D (not pooled).
+## Calling it again with the same resource and owner reuses the same player.
+func play_sound_follow(
+	sound: Resource,
+	sound_owner: Node3D,
+	vol_db_offset := 0.0,
+	autoplay := true,
+	bus: StringName = &""
+) -> AudioStreamPlayer3D:
+	var audio_set := _as_set(sound)
+	if audio_set == null:
+		return null
+	# Key follow players by the resource itself so repeated calls reuse the player.
+	var key := StringName("res:%d" % sound.get_instance_id())
+	return _play_set_follow(audio_set, key, _resolve_bus(audio_set, bus), sound_owner, vol_db_offset, autoplay)
+
+
+@export_category("Playback Internals")
+
+func _play_set_2d(audio_set: AudioSet, bus_name: StringName, vol_db_offset: float) -> void:
+	var cue := audio_set.pick()
+	if cue == null or cue.stream == null:
+		return
+
+	var p := _get_voice_2d(bus_name)
+	if p == null:
+		return
+
+	_apply_cue_to_player_2d(p, bus_name, cue, vol_db_offset)
+	p.play()
+	_started_at_msec[p.get_instance_id()] = Time.get_ticks_msec()
+
+
+func _play_set_3d(audio_set: AudioSet, bus_name: StringName, world_pos: Vector3, vol_db_offset: float) -> void:
+	var cue := audio_set.pick()
+	if cue == null or cue.stream == null:
+		return
+
+	var p := _get_voice_3d(bus_name)
+	if p == null:
+		return
+
+	_apply_cue_to_player_3d(p, bus_name, cue, vol_db_offset)
+	p.global_position = world_pos
+	p.play()
+	_started_at_msec_3d[p.get_instance_id()] = Time.get_ticks_msec()
+
+
+func _play_set_follow(
+	audio_set: AudioSet,
+	key: StringName,
+	bus_name: StringName,
+	sound_owner: Node3D,
+	vol_db_offset: float,
+	autoplay: bool
+) -> AudioStreamPlayer3D:
+	if sound_owner == null:
 		return null
 
 	var cue := audio_set.pick()
@@ -271,36 +333,60 @@ func play_follow(
 		return null
 
 	var owner_id := sound_owner.get_instance_id()
+	var is_new_owner := not _follow_players.has(owner_id)
 	var per_owner: Dictionary = _follow_players.get(owner_id, {})
 
-	## Reuse existing follow player for this (sound_owner, id) pair
-	var existing: AudioStreamPlayer3D = per_owner.get(id)
+	## Reuse existing follow player for this (sound_owner, key) pair
+	var existing: AudioStreamPlayer3D = per_owner.get(key)
 	if existing != null and is_instance_valid(existing):
-		_apply_cue_to_player_3d(existing, _resolve_bus(audio_set), cue, vol_db_offset)
+		_apply_cue_to_player_3d(existing, bus_name, cue, vol_db_offset)
 		if autoplay and not existing.playing:
 			existing.play()
-		_follow_players[owner_id] = per_owner
 		return existing
 
 	## Create a new follow player and attach it to the sound_owner
 	var p := AudioStreamPlayer3D.new()
-	p.name = "FollowAudio_%s" % String(id)
+	p.name = "FollowAudio_%s" % String(key).validate_node_name()
 	sound_owner.add_child(p)
 
-	_apply_cue_to_player_3d(p, _resolve_bus(audio_set), cue, vol_db_offset)
+	_apply_cue_to_player_3d(p, bus_name, cue, vol_db_offset)
 
-	per_owner[id] = p
+	per_owner[key] = p
 	_follow_players[owner_id] = per_owner
 
-	## Cleanup mapping when the sound_owner leaves the scene tree
-	sound_owner.tree_exited.connect(func():
-		_follow_players.erase(owner_id)
-	)
+	## Cleanup mapping when the sound_owner leaves the scene tree (connect once per owner)
+	if is_new_owner:
+		sound_owner.tree_exited.connect(func(): _follow_players.erase(owner_id), CONNECT_ONE_SHOT)
 
 	if autoplay:
 		p.play()
 
 	return p
+
+
+## Wraps a direct sound resource in an AudioSet so it can use the shared playback path.
+## The wrapper is not cached: it's two tiny objects, and caching would keep
+## every sound ever passed in loaded for the lifetime of the game.
+func _as_set(sound: Resource) -> AudioSet:
+	if sound == null:
+		push_warning("AudioManager: play_sound* called with null")
+		return null
+	if sound is AudioSet:
+		return sound
+	var cue: AudioCue
+	if sound is AudioCue:
+		cue = sound
+	elif sound is AudioStream:
+		cue = AudioCue.new()
+		cue.stream = sound
+	else:
+		push_warning("AudioManager: play_sound* expects AudioStream, AudioCue or AudioSet, got %s" % sound.get_class())
+		return null
+
+	var wrapper := AudioSet.new()
+	wrapper.bus_name = StringName()  # empty -> resolved per call (default "SFX")
+	wrapper.cues = [cue]
+	return wrapper
 
 
 @export_category("Music Playback")
@@ -536,7 +622,9 @@ func _get_set_or_warn(id: StringName) -> AudioSet:
 
 ## Resolves the target bus for an AudioSet with a safe fallback.
 ## Used by one-shot systems (2D/3D) and follow emitters.
-func _resolve_bus(audio_set: AudioSet) -> StringName:
+func _resolve_bus(audio_set: AudioSet, override: StringName = &"") -> StringName:
+	if override != StringName():
+		return override
 	var bus_name: StringName = audio_set.bus_name
 	if bus_name == StringName():
 		bus_name = &"SFX"

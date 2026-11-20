@@ -32,8 +32,7 @@ func set_setting(section: String, key: String, value: Variant) -> void:
 	_apply_setting(section, key, value)
 	save_settings()
 	
-	if is_instance_valid(SignalBus):
-		SignalBus.setting_changed.emit(section + ":" + key, value)
+	SignalBus.setting_changed.emit(section, key, value)
 
 func get_setting(section: String, key: String, default: Variant = null) -> Variant:
 	if _settings.has(section) and _settings[section].has(key):

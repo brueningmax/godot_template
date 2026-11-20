@@ -1,3 +1,6 @@
 [gd_scene format=3 uid="uid://covyt8gji6lis"]
 
-[node name="Main_tscn" type="Node2D" unique_id=1547157618]
+[ext_resource type="Script" path="res://globals/sceneManager/boot.gd" id="1_boot"]
+
+[node name="Main" type="Node"]
+script = ExtResource("1_boot")
