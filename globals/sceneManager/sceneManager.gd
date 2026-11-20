@@ -5,6 +5,8 @@ const DEFAULT_SCREEN_TIME: float = 2.0
 const DEFAULT_FADE_DURATION: float = 0.25
 
 var current_scene: Node = null
+## SceneRegistry.SceneKey of current_scene, or -1 (adopted standalone scene / none).
+var current_key: int = -1
 var fade_rect: ColorRect
 var _changing := false
 
@@ -37,16 +39,34 @@ func _ready() -> void:
 
 # Transition to a scene directly, with an optional fade.
 func change_scene(scene_key: SceneRegistry.SceneKey, payload: Dictionary = {}, use_fade: bool = false) -> void:
-	if _changing: return
-	_changing = true
-
 	var packed: PackedScene = SceneRegistry.SCENES.get(scene_key)
 	if packed == null:
 		push_error("SceneManager: No scene registered for key: %s" % SceneRegistry.SceneKey.keys()[scene_key])
-		_changing = false
 		return
+	await _change_to(packed, scene_key, payload, use_fade)
 
-	SignalBus.scene_change_started.emit(scene_key)
+
+# Re-creates the current scene from its file (e.g. "Restart" in the pause menu).
+# Also works for a scene that was started on its own (F6) and adopted.
+func reload_current(payload: Dictionary = {}, use_fade: bool = true) -> void:
+	_adopt_standalone_scene()
+	if current_scene == null or current_scene.scene_file_path == "":
+		push_error("SceneManager: reload_current() has no scene file to reload")
+		return
+	var packed: PackedScene = load(current_scene.scene_file_path)
+	await _change_to(packed, current_key, payload, use_fade)
+
+
+## True while a transition is running. New change requests are ignored then.
+func is_changing() -> bool:
+	return _changing
+
+
+func _change_to(packed: PackedScene, key: int, payload: Dictionary, use_fade: bool) -> void:
+	if _changing: return
+	_changing = true
+
+	SignalBus.scene_change_started.emit(key)
 	_adopt_standalone_scene()
 
 	if use_fade:
@@ -55,11 +75,12 @@ func change_scene(scene_key: SceneRegistry.SceneKey, payload: Dictionary = {}, u
 		await _fade_out(DEFAULT_FADE_DURATION)
 
 	if current_scene:
-		current_scene.queue_free()
+		_free_scene(current_scene)
 
 	var new_scene := packed.instantiate()
 	holder.add_child(new_scene)
 	current_scene = new_scene
+	current_key = key
 
 	if use_fade:
 		await _fade_in(DEFAULT_FADE_DURATION)
@@ -89,7 +110,7 @@ func change_scene_with_screen(next_key: SceneRegistry.SceneKey, screen_key: Scen
 	await _fade_out(DEFAULT_FADE_DURATION)
 
 	if current_scene:
-		current_scene.queue_free()
+		_free_scene(current_scene)
 	current_scene = null
 
 	var screen_packed: PackedScene = SceneRegistry.SCENES.get(screen_key)
@@ -111,6 +132,7 @@ func change_scene_with_screen(next_key: SceneRegistry.SceneKey, screen_key: Scen
 	var new_scene := next_packed.instantiate()
 	holder.add_child(new_scene)
 	current_scene = new_scene
+	current_key = next_key
 
 	if screen_node:
 		screen_node.queue_free()
@@ -138,6 +160,15 @@ func _adopt_standalone_scene() -> void:
 	var standalone := get_tree().current_scene
 	if standalone != null and standalone != self:
 		current_scene = standalone
+		current_key = -1
+
+
+# Takes the old scene out of the tree right away (so the new one can use the
+# same node name and paths) and frees it at the end of the frame.
+func _free_scene(scene: Node) -> void:
+	if scene.get_parent():
+		scene.get_parent().remove_child(scene)
+	scene.queue_free()
 
 
 # Plain Node scenes have no visibility; only hide what can be hidden.
@@ -160,7 +191,7 @@ func _begin_screen(screen_node: Node) -> int:
 # comes first. A skip that happened before this call (during the fade-in)
 # counts. Screens without a `skipped` signal just wait.
 func _wait_for_screen(token: int, screen_time: float) -> void:
-	get_tree().create_timer(screen_time).timeout.connect(_finish_screen.bind(token))
+	get_tree().create_timer(screen_time, true).timeout.connect(_finish_screen.bind(token))
 	while _screen_done_token != token:
 		await _screen_finished
 
@@ -178,12 +209,12 @@ func _apply_payload(scene: Node, payload: Dictionary) -> void:
 
 func _fade_out(dur: float) -> void:
 	fade_rect.visible = true
-	var t := create_tween()
+	var t := create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	t.tween_property(fade_rect, "modulate:a", 1.0, dur)
 	await t.finished
 
 func _fade_in(dur: float) -> void:
-	var t := create_tween()
+	var t := create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	t.tween_property(fade_rect, "modulate:a", 0.0, dur)
 	await t.finished
 	fade_rect.visible = false

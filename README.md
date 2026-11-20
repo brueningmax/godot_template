@@ -15,6 +15,7 @@ All systems are autoloads, available globally by name:
 | `RngManager`      | `globals/rngManager/rngManager.gd`              | Seeded, reproducible random streams and order-independent rolls. |
 | `Audio`           | `globals/audioManager/audio_manager_node.tscn`  | Plays sounds by ID (`ui.click`) with pooling and music layers.   |
 | `SettingsManager` | `globals/settingsManager/settingsManager.gd`    | Loads, saves and applies user settings (`user://settings.cfg`).  |
+| `GameState`       | `globals/gameState/gameState.gd`                | Menu / playing / paused state; owns pause, the pause menu and mouse mode. |
 | `SceneManager`    | `globals/sceneManager/sceneManager.gd`          | Scene changes with fades and intermediate screens.               |
 
 There are also menus (main, pause, settings), a reusable `UIButton`, and a debug **scene library** that lists every scene in the project and can preview and launch it.

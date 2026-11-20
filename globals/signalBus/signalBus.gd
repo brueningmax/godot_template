@@ -24,7 +24,10 @@ signal setting_changed(section: String, key: String, value: Variant)
 
 # --- Game state -------------------------------------------------------------
 
-## The game was paused or resumed.
+## GameState changed. Both values are GameState.State (MENU, PLAYING, PAUSED).
+signal game_state_changed(new_state: int, old_state: int)
+
+## The game was paused or resumed (emitted by GameState).
 signal pause_toggled(is_paused: bool)
 
 # --- Game -------------------------------------------------------------------

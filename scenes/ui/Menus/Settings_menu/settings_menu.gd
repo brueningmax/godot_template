@@ -13,9 +13,3 @@ func _ready() -> void:
 	btn_back.pressed.connect(func(): back_pressed.emit())
 	btn_apply.pressed.connect(func(): apply_pressed.emit())
 
-
-func _unhandled_input(e: InputEvent) -> void:
-	if not visible: return
-	if e.is_action_pressed("pause"):
-		back_pressed.emit()
-		accept_event()

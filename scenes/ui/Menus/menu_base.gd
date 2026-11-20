@@ -5,6 +5,9 @@ class_name MenuBase
 var _tween: Tween
 
 func open() -> void:
+	# Stop a running close() fade, or its callback would hide us again.
+	if _tween and _tween.is_running():
+		_tween.kill()
 	visible = true
 	modulate.a = 0.0
 	_tween = get_tree().create_tween()
@@ -25,10 +28,24 @@ func close() -> void:
 		_on_close()
 
 func grab_default_focus() -> void:
-	if default_focus != NodePath():
-		var n := get_node_or_null(default_focus)
-		if n and n is Control:
-			(n as Control).grab_focus()
+	if default_focus == NodePath():
+		return
+	var target := _first_focusable(get_node_or_null(default_focus))
+	if target:
+		target.grab_focus()
+
+
+# default_focus may point at a wrapper (e.g. UIButton) that can't take focus
+# itself; use the first focusable control inside it.
+func _first_focusable(node: Node) -> Control:
+	if node is Control and (node as Control).focus_mode != Control.FOCUS_NONE:
+		return node
+	if node:
+		for child in node.get_children():
+			var found := _first_focusable(child)
+			if found:
+				return found
+	return null
 
 func _on_open() -> void:
 	pass

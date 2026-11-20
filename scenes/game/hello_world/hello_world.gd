@@ -6,7 +6,8 @@ extends Node2D
 ## - Input actions from project.godot (left/right/up/down, jump, pause)
 ## - RngManager: a named stream, so a typed seed reproduces the same rolls
 ## - Audio: footsteps by registry ID
-## - SceneManager: back to the menu (works even when run on its own with F6)
+## - GameState: declares itself gameplay, so Esc opens the pause menu
+##   (also when run on its own with F6)
 
 const SPEED := 300.0
 const STEP_INTERVAL := 0.35
@@ -19,6 +20,7 @@ var _last_roll := "-"
 
 
 func _ready() -> void:
+	GameState.enter_gameplay(Input.MOUSE_MODE_VISIBLE)
 	player.position = get_viewport_rect().size / 2.0
 	_update_info()
 
@@ -41,9 +43,6 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("jump"):
 		_roll()
-	elif event.is_action_pressed("pause"):
-		# Until the pause menu is wired up (#23), Esc returns to the menu.
-		SceneManager.change_scene(SceneRegistry.SceneKey.MainMenu, {}, true)
 
 
 func _roll() -> void:
@@ -55,7 +54,7 @@ func _roll() -> void:
 
 
 func _update_info() -> void:
-	info.text = "Hello, world!\nSeed: %s\nLast roll: %s\n\nMove: WASD   Roll: Space   Menu: Esc" % [
+	info.text = "Hello, world!\nSeed: %s\nLast roll: %s\n\nMove: WASD   Roll: Space   Pause: Esc" % [
 		RngManager.get_seed(),
 		_last_roll,
 	]

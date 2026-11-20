@@ -11,6 +11,7 @@ How the template's systems work, how to use them, and what isn't obvious from th
 3. [SignalBus](#signalbus)
 4. [SettingsManager](#settingsmanager)
 5. [RngManager](#rngmanager)
+6. [GameState and pausing](#gamestate-and-pausing)
 6. [SceneManager and SceneRegistry](#scenemanager-and-sceneregistry)
 7. [Audio](#audio)
 8. [Menus and UI](#menus-and-ui)
@@ -42,7 +43,7 @@ Main.tscn (boot.gd)                       your scene, on its own
 
 **Rule:** never put start-up navigation in an autoload's `_ready()`. Autoloads also run for F6, so it would redirect every scene you try to debug. Start-up navigation belongs in `boot.gd`.
 
-The **hello-world scene** (`scenes/game/hello_world/`) is a placeholder game showing input actions, an RNG stream, `Audio` and `SceneManager` in about 60 lines. Replace it with your game by pointing `SceneKey.GameScene` at your scene in `scene_registry.gd`.
+The **hello-world scene** (`scenes/game/hello_world/`) is a placeholder game showing input actions, an RNG stream, `Audio` and `GameState` (Esc pauses) in about 60 lines. Replace it with your game by pointing `SceneKey.GameScene` at your scene in `scene_registry.gd`.
 
 ## Autoloads
 
@@ -52,7 +53,8 @@ Autoloads are created in the order listed in **Project Settings → Globals → 
 2. `RngManager`
 3. `Audio`: a **scene** (`audio_manager_node.tscn`), not a script, so its registries can be assigned in the inspector.
 4. `SettingsManager`: loads `user://settings.cfg` and applies volumes, so it must come after the audio bus layout is active (always true) and after `SignalBus`.
-5. `SceneManager`
+5. `GameState`
+6. `SceneManager`
 
 **Gotcha:** an autoload's name and its script's `class_name` must not be the same, or the global is ambiguous. That's why the scene manager's script is `class_name MainRoot` while the autoload is called `SceneManager`.
 
@@ -74,7 +76,8 @@ Always use this typed form, never `connect("name", ...)` or `emit_signal("name")
 | `scene_change_started` | `SceneManager` | `to_scene_key: int` (a `SceneRegistry.SceneKey`) |
 | `scene_change_finished` | `SceneManager` | `new_scene: Node` |
 | `setting_changed` | `SettingsManager.set_setting()` | `section, key, value` |
-| `pause_toggled` | (game code; see [#23](https://github.com/brueningmax/godot_template/issues/23)) | `is_paused: bool` |
+| `game_state_changed` | `GameState` | `new_state, old_state: int` (`GameState.State`) |
+| `pause_toggled` | `GameState.pause()` / `resume()` | `is_paused: bool` |
 
 **Bus or direct signal?** Use the bus when the emitter shouldn't know who listens and the listeners are unrelated: HUD, audio and achievements reacting to the same event, or anything global. Use a normal signal for parent/child communication, e.g. a button telling its menu it was pressed. Passing everything through the bus makes data flow hard to follow.
 
@@ -137,6 +140,52 @@ A random seed is also picked at startup, so randomness always works, even if not
 
 All values are derived with 32-bit FNV-1a hashing of `seed + "|" + key`, so a given seed produces the same results on every platform.
 
+## GameState and pausing
+
+`globals/gameState/gameState.gd`. Tracks whether the player is in a menu, playing, or paused, and is the **only** code that sets `get_tree().paused` and `Input.mouse_mode`. It's also the only handler of the `pause` action.
+
+```
+             enter_menu()                  enter_gameplay(mouse_mode)
+   ┌──────┐ ◄───────────── ┌─────────┐ ◄─────────────────────────────
+   │ MENU │                │ PLAYING │ ── Esc (pause) ──► ┌────────┐
+   └──────┘ ─────────────► └─────────┘ ◄── Esc / Resume ── │ PAUSED │
+                                                          └────────┘
+```
+
+**Every scene declares its state in `_ready()`:**
+
+```gdscript
+func _ready() -> void:
+	GameState.enter_gameplay(Input.MOUSE_MODE_CAPTURED)  # a gameplay scene
+	# or
+	GameState.enter_menu()                               # a menu scene
+```
+
+This works the same when the scene is run on its own (F6), because `GameState` is an autoload and doesn't depend on the boot flow. A scene that declares nothing stays in whatever state the previous scene left (`MENU` at start-up), so Esc does nothing there.
+
+**What Esc does:**
+
+| State | `pause` (Esc) | `ui_cancel` (Esc, gamepad B) |
+| --- | --- | --- |
+| `PLAYING` | pause: tree paused, cursor shown, pause menu opened | nothing (B is often a gameplay button) |
+| `PAUSED` | back one step: settings → pause menu → resume | same |
+| `MENU` with an overlay menu open | close it | same |
+| during a scene transition | ignored | ignored |
+
+**Mouse mode:** the mode passed to `enter_gameplay()` is restored on every resume. Menus always get a visible cursor. Don't set `Input.mouse_mode` anywhere else, or the two will fight.
+
+**Pause menu buttons:** Resume → `resume()`, Settings → the settings menu (overlay), Restart → `SceneManager.reload_current()`, Quit → main menu. Starting any scene change also unpauses and closes overlays, so a paused tree never leaks into the next scene.
+
+**Overlay menus:** `GameState.push_menu(menu)` / `pop_menu()` show menus over the current scene on a `CanvasLayer` (layer 50, below the scene fade). They show a dimmer and handle back navigation. Menus are reused: popping hides a menu rather than freeing it. `GameState.open_settings()` opens the shared settings menu.
+
+**`process_mode` rules for a paused tree:**
+
+- Default (`INHERIT` → `PAUSABLE`): the node freezes while paused. That's right for gameplay.
+- `WHEN_PAUSED`: runs only while paused, for pause-only UI.
+- `ALWAYS`: never freezes. Use it for things like music fades and debug overlays. Overlay menus pushed through `GameState` are set to `ALWAYS`.
+- Tweens follow the node that created them. Use `create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)` for tweens that must run while paused (as `MenuBase` and the scene fades do).
+- Timers: `get_tree().create_timer(sec, true)` keeps running while paused. The default is to pause with the tree.
+
 ## SceneManager and SceneRegistry
 
 `globals/sceneManager/sceneManager.gd` (autoload `SceneManager`, class `MainRoot`) and `scene_registry.gd` (class `SceneRegistry`, **not** an autoload).
@@ -147,6 +196,7 @@ Scenes are referred to by enum key, never by path:
 SceneManager.change_scene(SceneRegistry.SceneKey.MainMenu)
 SceneManager.change_scene(SceneRegistry.SceneKey.GameScene, {"level": 2}, true)  # payload, fade
 SceneManager.change_scene_with_screen(SceneRegistry.SceneKey.MainMenu, SceneRegistry.SceneKey.SplashScreen, 2.0)
+SceneManager.reload_current()   # restart the current scene from its file
 ```
 
 To add a scene, add a value to `SceneKey` and an entry in `SCENES` in `scene_registry.gd`. Add new keys at the **end** of the enum: exported `SceneKey` values, e.g. `start_scene` on `Main.tscn`, are stored as numbers, so inserting a key in the middle shifts them.
@@ -156,7 +206,9 @@ To add a scene, add a value to `SceneKey` and an entry in `SCENES` in `scene_reg
 Non-obvious behaviour:
 
 - **Don't use `get_tree().change_scene_to_file()`.** The manager keeps the active scene under `/root/SceneManager/SceneHolder`, and `get_tree().current_scene` is empty after boot. Use `SceneManager.current_scene` to get the active scene. (When you run a scene with F6, it is the tree's current scene until the first `change_scene()` takes it over.)
-- **Calls during a transition are silently ignored**, because of the `_changing` flag. You don't get an error.
+- **Calls during a transition are silently ignored.** You don't get an error. Check `SceneManager.is_changing()` if it matters.
+- The old scene is removed from the tree **before** the new one is added, so a reloaded scene keeps its node name (`HelloWorld`, not `@HelloWorld@2`) and node paths stay valid.
+- Fades and screen timers keep running even if the tree is paused.
 - **Payloads:** if the new scene has an `apply_payload(payload: Dictionary)` method, it's called **deferred**, after the scene's `_ready()`. Don't read payload data in `_ready()`.
 - Intermediate screens (splash, loading) are added to the manager's `Overlay` CanvasLayer (layer 100), above the game.
 - Every scene in `SCENES` is `preload()`ed, so all of them load at startup.
@@ -222,7 +274,9 @@ Gotchas:
 3. Set `default_focus` in `_ready()` (e.g. `default_focus = btn_resume.get_path()`).
 4. Call `open()` / `close()` rather than toggling `visible`, so the fade and focus run.
 
-`PauseMenu` and `SettingsMenu` follow this pattern but aren't opened anywhere yet. Wiring is tracked in [#4](https://github.com/brueningmax/godot_template/issues/4) (settings) and [#23](https://github.com/brueningmax/godot_template/issues/23) (pause and global state).
+`default_focus` may point at a wrapper such as a `UIButton`. The first focusable control inside it gets focus.
+
+`PauseMenu` and `SettingsMenu` are opened by [`GameState`](#gamestate-and-pausing) as overlay menus. They only emit signals and contain no pause or input logic of their own. Settings controls are tracked in [#4](https://github.com/brueningmax/godot_template/issues/4).
 
 > Planned: controller support in [#16](https://github.com/brueningmax/godot_template/issues/16).
 

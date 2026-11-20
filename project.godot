@@ -25,6 +25,7 @@ SignalBus="*uid://dtrf6qhhjchh"
 RngManager="*uid://j1yxa6tth2jg"
 Audio="*uid://dweltaoi2hd0o"
 SettingsManager="*res://globals/settingsManager/settingsManager.gd"
+GameState="*res://globals/gameState/gameState.gd"
 SceneManager="*uid://d20rnm35g01po"
 
 [input]
