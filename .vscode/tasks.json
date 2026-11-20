@@ -1,0 +1,26 @@
+{
+    // Uses the Godot path from your User settings ("godotTools.editorPath.godot4"),
+    // so no machine-specific path is committed. See docs/TEMPLATE_GUIDE.md -> "Testing".
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run all tests",
+            "type": "process",
+            "command": "${config:godotTools.editorPath.godot4}",
+            "args": ["--headless", "--path", "${workspaceFolder}", "-s", "res://addons/gut/gut_cmdln.gd"],
+            "group": { "kind": "test", "isDefault": true },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run tests in current file",
+            "type": "process",
+            "command": "${config:godotTools.editorPath.godot4}",
+            "args": [
+                "--headless", "--path", "${workspaceFolder}", "-s", "res://addons/gut/gut_cmdln.gd",
+                "-gselect=${fileBasenameNoExtension}"
+            ],
+            "group": "test",
+            "problemMatcher": []
+        }
+    ]
+}

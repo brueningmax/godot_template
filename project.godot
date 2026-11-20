@@ -28,6 +28,10 @@ SettingsManager="*res://globals/settingsManager/settingsManager.gd"
 GameState="*res://globals/gameState/gameState.gd"
 SceneManager="*uid://d20rnm35g01po"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gut/plugin.cfg")
+
 [input]
 
 pause={

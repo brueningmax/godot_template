@@ -1,0 +1,9 @@
+# gdformat configuration (gdtoolkit, version pinned in requirements-dev.txt).
+# Run: gdformat .
+excluded_directories: !!set
+  .git: null
+  .godot: null
+  addons: null
+line_length: 100
+safety_checks: null
+use_spaces: null

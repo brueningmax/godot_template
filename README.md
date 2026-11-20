@@ -31,6 +31,14 @@ There are also menus (main, pause, settings), a reusable `UIButton`, and a debug
 
 Then open `project.godot` in Godot 4.7 and press **F5**.
 
+## Tests
+
+```bash
+godot --headless -s addons/gut/gut_cmdln.gd
+```
+
+59 automated tests (GUT) cover the template's systems. See [Testing](docs/TEMPLATE_GUIDE.md#testing).
+
 ## Project layout
 
 ```
@@ -38,7 +46,8 @@ assets/      Raw assets (audio, textures, ...)
 globals/     Autoloaded systems, one folder per system
 resources/   .tres data (audio registries, bus layout, ...)
 scenes/      Game scenes, UI and debug tools
-test/        Test scenes
+test/        Automated tests (unit, integration) and sandbox scenes
+addons/      Third-party plugins (GUT)
 docs/        Documentation
 ```
 

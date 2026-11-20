@@ -10,6 +10,9 @@ const DEFAULT_FADE_DURATION: float = 0.25
 var current_scene: Node = null
 ## SceneRegistry.SceneKey of current_scene, or -1 (adopted standalone scene / none).
 var current_key: int = -1
+## Take over a scene that was started on its own (F6) on the first change.
+## Test runners turn this off, so their own runner scene is never adopted.
+var adopt_standalone := true
 var fade_rect: ColorRect
 var _changing := false
 
@@ -44,12 +47,7 @@ func change_scene(
 ) -> void:
 	var packed: PackedScene = SceneRegistry.SCENES.get(scene_key)
 	if packed == null:
-		push_error(
-			(
-				"SceneManager: No scene registered for key: %s"
-				% SceneRegistry.SceneKey.keys()[scene_key]
-			)
-		)
+		push_error("SceneManager: No scene registered for key: %s" % _key_name(scene_key))
 		return
 	await _change_to(packed, scene_key, payload, use_fade)
 
@@ -113,12 +111,7 @@ func change_scene_with_screen(
 
 	var next_packed: PackedScene = SceneRegistry.SCENES.get(next_key)
 	if next_packed == null:
-		push_error(
-			(
-				"SceneManager: No scene registered for key: %s"
-				% SceneRegistry.SceneKey.keys()[next_key]
-			)
-		)
+		push_error("SceneManager: No scene registered for key: %s" % _key_name(next_key))
 		_changing = false
 		return
 
@@ -147,7 +140,7 @@ func change_scene_with_screen(
 		push_warning(
 			(
 				"SceneManager: No scene registered for screen key: %s — skipping screen."
-				% SceneRegistry.SceneKey.keys()[screen_key]
+				% _key_name(screen_key)
 			)
 		)
 
@@ -179,11 +172,18 @@ func goto_menu() -> void:
 # --- Helpers ---
 
 
+# "MAIN_MENU" for a known key, the number for anything else (never errors,
+# since it's used to build error messages).
+func _key_name(key: int) -> String:
+	var names := SceneRegistry.SceneKey.keys()
+	return names[key] if key >= 0 and key < names.size() else str(key)
+
+
 # A scene started on its own (F6 / "run current scene") is the tree's
 # current_scene, outside our SceneHolder. Take ownership of it so the first
 # change_scene() replaces it instead of leaving it on screen underneath.
 func _adopt_standalone_scene() -> void:
-	if current_scene != null:
+	if current_scene != null or not adopt_standalone:
 		return
 	var standalone := get_tree().current_scene
 	if standalone != null and standalone != self:

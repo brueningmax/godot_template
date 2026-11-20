@@ -98,7 +98,8 @@ SettingsManager.set_setting("display", "vsync", false)
 
 Non-obvious behaviour:
 
-- **Defaults live in the `_settings` dictionary** at the top of the script. On load, values from the file are merged over the defaults, so new keys you add to the dictionary appear automatically for existing players.
+- **Defaults live in the `DEFAULTS` constant** at the top of the script. On load, values from the file are merged over the defaults, so new keys you add there appear automatically for existing players. `reset_to_defaults()` puts everything back to `DEFAULTS` (without saving).
+- The file is `settings_path` (default `user://settings.cfg`). Tests point it at a temporary file so they never touch the player's settings.
 - **`set_setting()` applies and saves immediately** by default, writing the whole file. Pass `persist = false` to apply without saving (`set_setting("audio", "music_volume", v, false)`), e.g. while a slider is dragged, and call `save_settings()` when you're done.
 - `snapshot()` returns a deep copy of every setting, and `restore(snapshot)` applies one again without saving. The settings menu uses these to revert.
 - It then emits `SignalBus.setting_changed(section, key, value)`.
@@ -115,7 +116,7 @@ Non-obvious behaviour:
 
 ### Adding a setting end to end
 
-1. **Default:** add the key to `_settings` in `settingsManager.gd`, e.g. `"display": {..., "max_fps": 0}`. Existing players get the default automatically.
+1. **Default:** add the key to `DEFAULTS` in `settingsManager.gd`, e.g. `"display": {..., "max_fps": 0}`. Existing players get the default automatically.
 2. **Apply:** handle the key in `_apply_display()` (or a new `_apply_<section>()` added to the `match` in `_apply_setting()`), e.g. `"max_fps": Engine.max_fps = value`.
 3. **Menu:** add one entry to `ROWS` in `settings_menu.gd`: `{section = "display", key = "max_fps", label = "FPS cap", type = RowType.SLIDER}`. Sliders currently cover 0–1. A different range or a dropdown needs a new `RowType`.
 
@@ -219,7 +220,7 @@ To add a scene, add a value to `SceneKey` and an entry in `SCENES` in `scene_reg
 
 Non-obvious behaviour:
 
-- **Don't use `get_tree().change_scene_to_file()`.** The manager keeps the active scene under `/root/SceneManager/SceneHolder`, and `get_tree().current_scene` is empty after boot. Use `SceneManager.current_scene` to get the active scene. (When you run a scene with F6, it is the tree's current scene until the first `change_scene()` takes it over.)
+- **Don't use `get_tree().change_scene_to_file()`.** The manager keeps the active scene under `/root/SceneManager/SceneHolder`, and `get_tree().current_scene` is empty after boot. Use `SceneManager.current_scene` to get the active scene. (When you run a scene with F6, it is the tree's current scene until the first `change_scene()` takes it over. Setting `SceneManager.adopt_standalone = false` disables that; the test base class does so, so GUT's own runner scene is never taken over.)
 - **Calls during a transition are silently ignored.** You don't get an error. Check `SceneManager.is_changing()` if it matters.
 - The old scene is removed from the tree **before** the new one is added, so a reloaded scene keeps its node name (`HelloWorld`, not `@HelloWorld@2`) and node paths stay valid.
 - Fades and screen timers keep running even if the tree is paused.
@@ -353,9 +354,67 @@ Alternatively, set `"godotTools.lsp.headless": true` in your User settings, and 
 
 ## Testing
 
-`test/` contains manual test scenes (`test_settings.tscn`, `test_signals.tscn`). Run one with **F6** in the editor.
+Automated tests use **[GUT](https://github.com/bitwes/Gut) 9.7.1** (the GUT release for Godot 4.7), vendored in `addons/gut/`.
 
-> Planned: automated headless tests are tracked in [#8](https://github.com/brueningmax/godot_template/issues/8).
+```
+test/
+  unit/            pure logic: RngManager, SettingsManager, SceneRegistry
+  integration/     real autoloads: scene changes, pause, menus, audio, boot
+  sandbox/         click-through scenes for poking at things by hand (F6)
+  template_test.gd base class for integration tests
+.gutconfig.json    which folders run, test_ prefix, exit when done
+```
+
+### Running tests
+
+| Where | How |
+| --- | --- |
+| Command line | `godot --headless -s addons/gut/gut_cmdln.gd` (all tests; exit code 1 if any fail) |
+| One file | add `-gselect=test_game_state` |
+| One test | add `-gselect=test_game_state -gunit_test_name=test_pause_and_resume` |
+| VS Code | **Terminal → Run Task → Run all tests** (or **Run tests in current file**). Uses your `godotTools.editorPath.godot4` User setting. |
+| Godot editor | the **GUT** panel at the bottom (the plugin is enabled in Project Settings → Plugins) |
+
+The suite runs headless in about 10 seconds.
+
+### Writing a test
+
+Create `test/unit/test_<thing>.gd` (pure logic) or `test/integration/test_<thing>.gd` (needs scenes or the pause state). Every function starting with `test_` is a test.
+
+```gdscript
+extends GutTest   # integration tests: extends TemplateTest
+
+func test_seed_reproduces() -> void:
+	RngManager.set_seed("abc")
+	var first := RngManager.keyed_u32("x")
+	RngManager.set_seed("abc")
+	assert_eq(RngManager.keyed_u32("x"), first)
+```
+
+- **Autoloads** (`RngManager`, `SettingsManager`, `GameState`, …) are available in tests by name, exactly as in game code.
+- **`await` works in tests.** Use `await wait_process_frames(n)`, `await wait_seconds(t)` or `await wait_until(func(): return cond, max_seconds)`. Never use a bare `await get_tree().process_frame` loop without a limit, because a broken test would then hang the whole run.
+- **Errors fail tests:** GUT counts engine errors and `push_error()` as failures. If a test triggers one on purpose, assert it with `assert_push_error("text")`. Warnings don't fail tests.
+- **Free what you create:** `autofree(Node.new())` or `add_child_autofree(node)`, so nodes don't leak into later tests.
+
+### `TemplateTest` (integration tests)
+
+`test/template_test.gd` resets global state **after each test**: it waits for any scene transition, unpauses, closes overlay menus, `GameState.enter_menu()`, and frees `SceneManager.current_scene`. It also provides helpers:
+
+- `await goto(SceneRegistry.SceneKey.MAIN_MENU)`: change scene and wait for it.
+- `await press("pause")`: send an input action.
+- `overlay_menu("PauseMenu")`: find a menu opened by `GameState`.
+- `await wait_for_transition()`.
+
+Two things it handles that you'd otherwise trip over:
+
+1. **Pausing doesn't freeze the tests.** GUT's own nodes would stop with `get_tree().paused = true`, and every following `wait_*()` would never return. `TemplateTest` runs GUT with `PROCESS_MODE_ALWAYS`.
+2. **GUT's runner scene is never "adopted"** by `SceneManager` (`adopt_standalone = false`). The adoption tests turn it on deliberately.
+
+If you override `before_all()`, `after_all()` or `after_each()` in a `TemplateTest`, call the `super` version (`await super.after_each()`).
+
+### Sandbox scenes
+
+`test/sandbox/signals_sandbox.tscn` and `settings_sandbox.tscn` are interactive. Run one with F6 to watch bus signals or tweak settings by hand. They aren't part of the automated run.
 
 ## CI and releases
 

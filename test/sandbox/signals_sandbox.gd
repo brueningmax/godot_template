@@ -52,4 +52,4 @@ func _on_scene_finished(node: Node) -> void:
 
 func _log(msg: String) -> void:
 	log_label.text += "\n" + msg
-	print("[TestSignals] " + msg)
+	print("[SignalsSandbox] " + msg)

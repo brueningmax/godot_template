@@ -45,4 +45,4 @@ func _on_external_setting_change(section: String, key: String, val: Variant) -> 
 
 func _log(msg: String) -> void:
 	log_label.text = "Log: " + msg
-	print("[TestSettings] " + msg)
+	print("[SettingsSandbox] " + msg)

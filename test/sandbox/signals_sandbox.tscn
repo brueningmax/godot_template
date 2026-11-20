@@ -1,8 +1,8 @@
 [gd_scene load_steps=2 format=3 uid="uid://testsignals01"]
 
-[ext_resource type="Script" path="res://test/test_signals.gd" id="1_test"]
+[ext_resource type="Script" path="res://test/sandbox/signals_sandbox.gd" id="1_test"]
 
-[node name="TestSignals" type="Control"]
+[node name="SignalsSandbox" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

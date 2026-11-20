@@ -3,10 +3,9 @@ extends Node
 ## Handles global game settings, persistence (saving/loading),
 ## and applying settings to the engine (AudioServer, DisplayServer).
 
-const SETTINGS_PATH = "user://settings.cfg"
-
-# Default values
-var _settings = {
+## Default value of every setting. Values from the settings file are merged
+## over these, so new keys added here reach existing players automatically.
+const DEFAULTS := {
 	"audio":
 	{
 		"master_volume": 0.8,
@@ -19,6 +18,11 @@ var _settings = {
 		"vsync": true,
 	}
 }
+
+## Where settings are saved. Tests point this at a temporary file.
+var settings_path := "user://settings.cfg"
+
+var _settings: Dictionary = DEFAULTS.duplicate(true)
 
 
 func _ready() -> void:
@@ -42,6 +46,11 @@ func set_setting(section: String, key: String, value: Variant, persist := true) 
 		save_settings()
 
 	SignalBus.setting_changed.emit(section, key, value)
+
+
+## Puts every setting back to DEFAULTS and applies them (does not save).
+func reset_to_defaults() -> void:
+	restore(DEFAULTS.duplicate(true))
 
 
 ## A deep copy of all current settings, e.g. to revert a settings menu.
@@ -72,14 +81,14 @@ func save_settings() -> void:
 		for key in _settings[section].keys():
 			config.set_value(section, key, _settings[section][key])
 
-	var err = config.save(SETTINGS_PATH)
+	var err = config.save(settings_path)
 	if err != OK:
-		push_error("SettingsManager: Failed to save settings to %s" % SETTINGS_PATH)
+		push_error("SettingsManager: Failed to save settings to %s" % settings_path)
 
 
 func load_settings() -> void:
 	var config = ConfigFile.new()
-	var err = config.load(SETTINGS_PATH)
+	var err = config.load(settings_path)
 
 	if err == OK:
 		for section in config.get_sections():
