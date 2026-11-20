@@ -24,15 +24,32 @@ func _ready() -> void:
 
 # --- Public API ---
 
-func set_setting(section: String, key: String, value: Variant) -> void:
+## Changes a setting, applies it to the engine and emits SignalBus.setting_changed.
+## With `persist` (default) the settings file is written too. Pass false to
+## preview a value (e.g. while dragging a slider) and call save_settings() later.
+func set_setting(section: String, key: String, value: Variant, persist := true) -> void:
 	if not _settings.has(section):
 		_settings[section] = {}
 	_settings[section][key] = value
-	
+
 	_apply_setting(section, key, value)
-	save_settings()
-	
+	if persist:
+		save_settings()
+
 	SignalBus.setting_changed.emit(section, key, value)
+
+
+## A deep copy of all current settings, e.g. to revert a settings menu.
+func snapshot() -> Dictionary:
+	return _settings.duplicate(true)
+
+
+## Applies every value from a snapshot() (without saving) and emits
+## setting_changed for each, so UIs listening to the bus update too.
+func restore(values: Dictionary) -> void:
+	for section in values.keys():
+		for key in values[section].keys():
+			set_setting(section, key, values[section][key], false)
 
 func get_setting(section: String, key: String, default: Variant = null) -> Variant:
 	if _settings.has(section) and _settings[section].has(key):

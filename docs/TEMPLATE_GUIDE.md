@@ -99,13 +99,27 @@ SettingsManager.set_setting("display", "vsync", false)
 Non-obvious behaviour:
 
 - **Defaults live in the `_settings` dictionary** at the top of the script. On load, values from the file are merged over the defaults, so new keys you add to the dictionary appear automatically for existing players.
-- **`set_setting()` applies and saves immediately**, writing the whole file on every call. Don't call it every frame, e.g. from a slider's `value_changed` while dragging, if that matters to you.
+- **`set_setting()` applies and saves immediately** by default, writing the whole file. Pass `persist = false` to apply without saving (`set_setting("audio", "music_volume", v, false)`), e.g. while a slider is dragged, and call `save_settings()` when you're done.
+- `snapshot()` returns a deep copy of every setting, and `restore(snapshot)` applies one again without saving. The settings menu uses these to revert.
 - It then emits `SignalBus.setting_changed(section, key, value)`.
 - Only the `audio` and `display` sections are applied to the engine. Other sections are stored and saved, but you have to apply them yourself.
 - Volumes are **linear 0–1**. They're converted to dB, and the bus is muted at ≤ 0.001.
 - `fullscreen` defaults to `true`, which uses exclusive fullscreen.
 
-> Planned: the settings menu wiring is tracked in [#4](https://github.com/brueningmax/godot_template/issues/4), and more settings in [#17](https://github.com/brueningmax/godot_template/issues/17).
+### Settings menu
+
+`scenes/ui/Menus/Settings_menu/`, opened by **Options** in the main menu and **Settings** in the pause menu, both through `GameState.open_settings()`.
+
+- **Preview, Apply, Back:** every change applies immediately, so you hear and see it, but it isn't saved. **Apply** saves and closes. **Back** or Esc restores the values from when the menu opened.
+- The rows are built at runtime from the `ROWS` list at the top of `settings_menu.gd`.
+
+### Adding a setting end to end
+
+1. **Default:** add the key to `_settings` in `settingsManager.gd`, e.g. `"display": {..., "max_fps": 0}`. Existing players get the default automatically.
+2. **Apply:** handle the key in `_apply_display()` (or a new `_apply_<section>()` added to the `match` in `_apply_setting()`), e.g. `"max_fps": Engine.max_fps = value`.
+3. **Menu:** add one entry to `ROWS` in `settings_menu.gd`: `{section = "display", key = "max_fps", label = "FPS cap", type = RowType.SLIDER}`. Sliders currently cover 0–1. A different range or a dropdown needs a new `RowType`.
+
+> Planned: more settings (window mode, resolution, UI scale, language, FPS cap) in [#17](https://github.com/brueningmax/godot_template/issues/17).
 
 ## RngManager
 
@@ -174,7 +188,7 @@ This works the same when the scene is run on its own (F6), because `GameState` i
 
 **Mouse mode:** the mode passed to `enter_gameplay()` is restored on every resume. Menus always get a visible cursor. Don't set `Input.mouse_mode` anywhere else, or the two will fight.
 
-**Pause menu buttons:** Resume → `resume()`, Settings → the settings menu (overlay), Restart → `SceneManager.reload_current()`, Quit → main menu. Starting any scene change also unpauses and closes overlays, so a paused tree never leaks into the next scene.
+**Pause menu buttons:** Resume → `resume()`, Settings → the [settings menu](#settings-menu) (overlay), Restart → `SceneManager.reload_current()`, Quit → main menu. Starting any scene change also unpauses and closes overlays, so a paused tree never leaks into the next scene.
 
 **Overlay menus:** `GameState.push_menu(menu)` / `pop_menu()` show menus over the current scene on a `CanvasLayer` (layer 50, below the scene fade). They show a dimmer and handle back navigation. Menus are reused: popping hides a menu rather than freeing it. `GameState.open_settings()` opens the shared settings menu.
 
@@ -276,7 +290,9 @@ Gotchas:
 
 `default_focus` may point at a wrapper such as a `UIButton`. The first focusable control inside it gets focus.
 
-`PauseMenu` and `SettingsMenu` are opened by [`GameState`](#gamestate-and-pausing) as overlay menus. They only emit signals and contain no pause or input logic of their own. Settings controls are tracked in [#4](https://github.com/brueningmax/godot_template/issues/4).
+`PauseMenu` and `SettingsMenu` are opened by [`GameState`](#gamestate-and-pausing) as overlay menus. They only emit signals and contain no pause or input logic of their own.
+
+**Back / Esc in overlay menus:** if the menu on top has a `cancel()` method, Esc calls it, and the menu closes itself by emitting its back signal. The settings menu reverts its changes there. Menus without `cancel()` are simply closed.
 
 > Planned: controller support in [#16](https://github.com/brueningmax/godot_template/issues/16).
 

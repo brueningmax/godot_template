@@ -93,8 +93,18 @@ func resume() -> void:
 	SignalBus.pause_toggled.emit(false)
 
 
-## Goes back one step: closes the top overlay menu, or resumes from the pause menu.
+## Goes back one step (Esc / ui_cancel). If the top menu has a cancel()
+## method (e.g. the settings menu reverting its changes), that runs and the
+## menu closes itself through its signal; otherwise the top menu is closed,
+## or the game resumes from the pause menu.
 func back() -> void:
+	if not _stack.is_empty() and _stack.back().has_method("cancel"):
+		_stack.back().cancel()
+		return
+	_close_top()
+
+
+func _close_top() -> void:
 	if _stack.size() > 1:
 		pop_menu()
 	elif state == State.PAUSED:
@@ -171,8 +181,8 @@ func _get_pause_menu() -> PauseMenu:
 func _get_settings_menu() -> SettingsMenu:
 	if _settings_menu == null:
 		_settings_menu = SETTINGS_MENU_SCENE.instantiate()
-		_settings_menu.back_pressed.connect(back)
-		_settings_menu.apply_pressed.connect(back)
+		_settings_menu.back_pressed.connect(_close_top)
+		_settings_menu.apply_pressed.connect(_close_top)
 	return _settings_menu
 
 
