@@ -424,6 +424,7 @@ If you override `before_all()`, `after_all()` or `after_each()` in a `TemplateTe
 
 | Step | Fails when |
 | --- | --- |
+| Tool versions | gdtoolkit in `requirements-dev.txt` differs from `rev:` in `.pre-commit-config.yaml` |
 | `gdformat --check .` | a script isn't formatted (fix: `gdformat .`) |
 | `gdlint .` | a lint rule is broken |
 | Import (`--import`) | the import log has `ERROR:` / `SCRIPT ERROR:` lines (missing files, broken references) |
@@ -488,5 +489,32 @@ Rules that aren't obvious:
 - **Lines** are at most 100 characters. For long node paths, mark the node **Access as Unique Name** in the scene and use `%NodeName` instead of `$A/B/C/NodeName`.
 - `gdformat` joins argument lists back onto one line when they fit, so don't hand-wrap short signatures; it will undo it.
 - `@export_category()` only groups **exported** properties in the inspector. Use `# --- Section ---` comments to divide code.
+
+### Pre-commit hooks (optional)
+
+`.pre-commit-config.yaml` runs gdtoolkit's official hooks on the `.gd` files you commit. Third-party code in `addons/` is skipped.
+
+```bash
+pip install -r requirements-dev.txt
+```
+```bash
+pre-commit install
+```
+```bash
+pre-commit install --hook-type pre-push
+```
+
+The second command enables the per-commit hooks. The third is optional: it also runs the full `tools/check.sh` before every push (about 20 s, needs Godot on `PATH` or `GODOT=`).
+
+| Hook | When | What happens |
+| --- | --- | --- |
+| `gdformat` | commit | Formats the staged scripts **in place**. If it changed anything, the commit stops: review the change, `git add` and commit again. |
+| `gdlint` | commit | Reports lint errors and blocks the commit until they're fixed. |
+| `full-check` | push (opt-in) | Runs `tools/check.sh`, the same checks as CI. |
+
+- Skip the hooks once with `git commit --no-verify` (or `git push --no-verify`). CI still runs everything.
+- Run them on every file: `pre-commit run --all-files`.
+- **Updating gdtoolkit:** change the version in **both** `requirements-dev.txt` and `rev:` in `.pre-commit-config.yaml`. `tools/check.sh` (and so CI) fails if the two differ.
+- **Windows:** commit from a terminal where Python and `pre-commit` are on `PATH`. A GUI client that can't find them reports the hook as failed.
 
 > Planned: folder and file naming, contribution flow: [#14](https://github.com/brueningmax/godot_template/issues/14).

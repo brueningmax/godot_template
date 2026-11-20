@@ -59,6 +59,13 @@ godot_run() {
 command -v "$GODOT" >/dev/null 2>&1 || fail "Godot not found: set GODOT=/path/to/godot"
 step "Godot $("$GODOT" --version 2>/dev/null | tail -n 1)"
 
+step "Tool versions in sync (requirements-dev.txt vs .pre-commit-config.yaml)"
+req=$(sed -n 's/^gdtoolkit==\(.*\)$/\1/p' requirements-dev.txt)
+hook=$(grep -A1 'godot-gdscript-toolkit' .pre-commit-config.yaml | sed -n 's/^ *rev: *\(.*\)$/\1/p')
+[ -n "$req" ] && [ "$req" = "$hook" ] ||
+	fail "gdtoolkit version differs: requirements-dev.txt '$req', .pre-commit-config.yaml '$hook'"
+echo "gdtoolkit $req"
+
 step "Format (gdformat --check)"
 gdformat --check . || fail "Formatting: run 'gdformat .'"
 
