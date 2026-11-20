@@ -535,7 +535,7 @@ Commit `*.import` and `*.uid` files: Godot needs them to keep resource IDs and i
 [Git LFS](https://git-lfs.com) stores large binary files (music, textures, models) outside the normal Git history. The repository holds small pointer files, and each checkout downloads only the versions it needs. The template doesn't enable it, since its assets are about 100 KB. Turn it on in a game once real assets start arriving. Early is easier than late.
 
 1. Install Git LFS once per machine: `git lfs install`.
-2. In `.gitattributes`, uncomment the lines in the Git LFS block (or run the command below), then commit `.gitattributes`.
+2. In `.gitattributes`, uncomment the lines in the Git LFS block, by hand or with the command below (on macOS write `sed -i '' -E ...`), then commit `.gitattributes`.
    ```bash
    sed -i -E 's/^# (\*\.[a-z0-9]+ filter=lfs .*)$/\1/' .gitattributes
    ```
