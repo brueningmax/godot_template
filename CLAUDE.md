@@ -36,6 +36,7 @@ gdformat . && gdlint .
 
 ## Gotchas when running Godot headless
 
+- **CI imports from a cold cache.** Code that passes locally can fail there, e.g. `var x := SomeAutoload.some_property` ("Cannot infer the type"). Before pushing a change to scripts, run `rm -rf .godot && tools/check.sh` once. Prefer explicit types (`var x: Node = …`) when reading autoload properties.
 - **Godot exits 0 even when resources fail to load.** Check output for `ERROR:` / `SCRIPT ERROR:` lines; don't trust the exit code. `tools/check.sh` does this.
 - **`godot --check-only --script file.gd` gives false "Identifier not found" errors** for autoloads. Use `tools/check_scripts.gd` instead.
 - **In a `--script` SceneTree harness**, autoload names aren't globals at compile time. Fetch them with `root.get_node("SceneManager")`, and look up enums with `load("res://…/scene_registry.gd").SceneKey`.

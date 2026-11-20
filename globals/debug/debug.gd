@@ -354,11 +354,11 @@ func _update_overlay() -> void:
 	if not _overlay_panel.visible:
 		return
 	var fps := Engine.get_frames_per_second()
-	var scene := SceneManager.current_scene
+	var scene: Node = SceneManager.current_scene
 	if scene == null:
 		scene = get_tree().current_scene
 	var keys := SceneRegistry.SceneKey.keys()
-	var key := SceneManager.current_key
+	var key: int = SceneManager.current_key
 	var key_text: String = keys[key] if key >= 0 and key < keys.size() else "no key"
 	var scene_text := "%s (%s)" % [scene.name, key_text] if scene else "-"
 	_overlay_label.text = (

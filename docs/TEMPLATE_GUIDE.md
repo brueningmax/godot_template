@@ -569,6 +569,8 @@ tools/check.sh
 GODOT=/path/to/godot tools/check.sh
 ```
 
+**CI starts from a fresh checkout with no `.godot/` cache**, and some problems only show up then. For example, `var x := SomeAutoload.some_property` can fail to infer its type on a cold import, while a warm local cache hides it. If CI fails where your machine passes, reproduce it with `rm -rf .godot && tools/check.sh`. Writing explicit types (`var x: Node = …`) for values read from autoloads avoids this case.
+
 The last form is for when `godot` isn't on your PATH. It works on Linux and macOS, and on Windows in Git Bash. A full run takes about 20 seconds.
 
 ### Bumping the Godot version
