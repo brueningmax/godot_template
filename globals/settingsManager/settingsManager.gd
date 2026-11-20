@@ -1,28 +1,37 @@
 extends Node
 
-## Handles global game settings, persistence (saving/loading), 
+## Handles global game settings, persistence (saving/loading),
 ## and applying settings to the engine (AudioServer, DisplayServer).
 
-const SETTINGS_PATH = "user://settings.cfg"
-
-# Default values
-var _settings = {
-	"audio": {
+## Default value of every setting. Values from the settings file are merged
+## over these, so new keys added here reach existing players automatically.
+const DEFAULTS := {
+	"audio":
+	{
 		"master_volume": 0.8,
 		"sfx_volume": 1.0,
 		"music_volume": 0.7,
 	},
-	"display": {
+	"display":
+	{
 		"fullscreen": true,
 		"vsync": true,
 	}
 }
 
+## Where settings are saved. Tests point this at a temporary file.
+var settings_path := "user://settings.cfg"
+
+var _settings: Dictionary = DEFAULTS.duplicate(true)
+
+
 func _ready() -> void:
 	load_settings()
 	apply_all()
 
+
 # --- Public API ---
+
 
 ## Changes a setting, applies it to the engine and emits SignalBus.setting_changed.
 ## With `persist` (default) the settings file is written too. Pass false to
@@ -39,6 +48,11 @@ func set_setting(section: String, key: String, value: Variant, persist := true) 
 	SignalBus.setting_changed.emit(section, key, value)
 
 
+## Puts every setting back to DEFAULTS and applies them (does not save).
+func reset_to_defaults() -> void:
+	restore(DEFAULTS.duplicate(true))
+
+
 ## A deep copy of all current settings, e.g. to revert a settings menu.
 func snapshot() -> Dictionary:
 	return _settings.duplicate(true)
@@ -51,27 +65,31 @@ func restore(values: Dictionary) -> void:
 		for key in values[section].keys():
 			set_setting(section, key, values[section][key], false)
 
+
 func get_setting(section: String, key: String, default: Variant = null) -> Variant:
 	if _settings.has(section) and _settings[section].has(key):
 		return _settings[section][key]
 	return default
 
+
 # --- Persistence ---
+
 
 func save_settings() -> void:
 	var config = ConfigFile.new()
 	for section in _settings.keys():
 		for key in _settings[section].keys():
 			config.set_value(section, key, _settings[section][key])
-	
-	var err = config.save(SETTINGS_PATH)
+
+	var err = config.save(settings_path)
 	if err != OK:
-		push_error("SettingsManager: Failed to save settings to %s" % SETTINGS_PATH)
+		push_error("SettingsManager: Failed to save settings to %s" % settings_path)
+
 
 func load_settings() -> void:
 	var config = ConfigFile.new()
-	var err = config.load(SETTINGS_PATH)
-	
+	var err = config.load(settings_path)
+
 	if err == OK:
 		for section in config.get_sections():
 			if not _settings.has(section):
@@ -82,12 +100,15 @@ func load_settings() -> void:
 		# If file doesn't exist or is corrupted, we just use defaults (already in _settings)
 		save_settings()
 
+
 # --- Internal: Applying Settings ---
+
 
 func apply_all() -> void:
 	for section in _settings.keys():
 		for key in _settings[section].keys():
 			_apply_setting(section, key, _settings[section][key])
+
 
 func _apply_setting(section: String, key: String, value: Variant) -> void:
 	match section:
@@ -96,19 +117,24 @@ func _apply_setting(section: String, key: String, value: Variant) -> void:
 		"display":
 			_apply_display(key, value)
 
+
 func _apply_audio(key: String, value: float) -> void:
 	var bus_name = "Master"
 	match key:
-		"master_volume": bus_name = "Master"
-		"sfx_volume": bus_name = "SFX"
-		"music_volume": bus_name = "Music"
-	
+		"master_volume":
+			bus_name = "Master"
+		"sfx_volume":
+			bus_name = "SFX"
+		"music_volume":
+			bus_name = "Music"
+
 	var bus_index = AudioServer.get_bus_index(bus_name)
 	if bus_index != -1:
 		# Convert 0-1 linear to decibels
 		var db = linear_to_db(value)
 		AudioServer.set_bus_volume_db(bus_index, db)
 		AudioServer.set_bus_mute(bus_index, value <= 0.001)
+
 
 func _apply_display(key: String, value: Variant) -> void:
 	match key:

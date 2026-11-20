@@ -1,5 +1,5 @@
-extends MenuBase
 class_name PauseMenu
+extends MenuBase
 
 signal resume_pressed
 signal settings_pressed
@@ -9,6 +9,7 @@ signal quit_pressed
 @onready var btn_settings: UIButton = $MarginContainer/VBoxContainer/VBoxContainer/Settings
 @onready var btn_restart: UIButton = $MarginContainer/VBoxContainer/VBoxContainer/Restart
 @onready var btn_quit: UIButton = $MarginContainer/VBoxContainer/VBoxContainer/Quit
+
 
 func _ready() -> void:
 	default_focus = btn_resume.get_path()

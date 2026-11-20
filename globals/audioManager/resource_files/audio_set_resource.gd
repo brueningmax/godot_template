@@ -1,6 +1,6 @@
 @tool
-extends Resource
 class_name AudioSet
+extends Resource
 
 @export_category("Identification")
 
@@ -9,19 +9,16 @@ class_name AudioSet
 ## The registry usually prefixes a namespace like "move.step".
 @export var id: StringName
 
-
 @export_category("Content")
 
 ## Variations of this sound. One cue is picked each time the set is played.
 @export var cues: Array[AudioCue] = []
-
 
 @export_category("Routing")
 
 ## Target audio bus for all cues in this set (e.g. "SFX", "UI", "Ambient", "Music").
 ## This list is populated from the current Audio Bus Layout (AudioServer).
 var bus_name: StringName = &"SFX"
-
 
 # Internal: remembers last chosen index to reduce immediate repeats.
 var _last_idx := -1
@@ -48,10 +45,12 @@ func _get_property_list() -> Array:
 		}
 	]
 
+
 func _get(property: StringName):
 	if property == &"bus_name":
 		return bus_name
 	return null
+
 
 func _set(property: StringName, value) -> bool:
 	if property == &"bus_name":
@@ -62,6 +61,7 @@ func _set(property: StringName, value) -> bool:
 
 
 @export_category("Playback")
+
 
 ## Picks one cue from the set.
 ## Current behavior: random choice with "no immediate repeat" when possible.

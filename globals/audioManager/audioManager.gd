@@ -1,6 +1,5 @@
-extends Node
 class_name AudioManager
-
+extends Node
 
 @export_category("Content")
 
@@ -9,45 +8,12 @@ class_name AudioManager
 ## and a collection of AudioSets.
 @export var registries: Array[AudioRegistry] = []
 
-
 @export_category("Voice Limiting")
 
 ## Per-bus voice limit configuration.
 ## Defines how many simultaneous voices are allowed per audio bus.
 ## When the limit is exceeded, the oldest voice is reused (stolen).
 @export var bus_configs: Array[AudioBusConfig] = []
-
-
-@export_category("Runtime State")
-
-## Resolved lookup table:
-## full audio ID (e.g. "move.step") -> AudioSet
-var _sets: Dictionary = {} # Dictionary[StringName, AudioSet]
-
-## Pool of reusable 2D AudioStreamPlayers per bus.
-## Used for non-positional one-shot sounds (UI, global SFX).
-var _pool_2d: Dictionary = {} # Dictionary[StringName, Array[AudioStreamPlayer]]
-
-## Tracks when each 2D AudioStreamPlayer started playing.
-## Used to determine which voice to steal.
-var _started_at_msec: Dictionary = {} # Dictionary[int, int]
-
-## Pool of reusable 3D AudioStreamPlayers per bus.
-## Used for positional one-shot sounds.
-var _pool_3d: Dictionary = {} # Dictionary[StringName, Array[AudioStreamPlayer3D]]
-
-## Tracks when each 3D AudioStreamPlayer started playing.
-## Used to determine which voice to steal.
-var _started_at_msec_3d: Dictionary = {} # Dictionary[int, int]
-
-## Persistent 3D players that follow scene nodes.
-## Key: owner instance id
-## Value: Dictionary[full_audio_id, AudioStreamPlayer3D]
-##
-## This is intentionally NOT pooled:
-## persistent emitters map 1:1 to world objects (machines, wind zones, etc.).
-var _follow_players: Dictionary = {}
-
 
 @export_category("Music Layers")
 
@@ -63,13 +29,43 @@ var _follow_players: Dictionary = {}
 ## Useful for balancing without touching every AudioCue volume.
 @export_range(-30.0, 12.0, 0.1) var music_layers_volume_db: float = 0.0
 
+# --- Runtime state ---
+
+## Resolved lookup table:
+## full audio ID (e.g. "move.step") -> AudioSet
+var _sets: Dictionary = {}  # Dictionary[StringName, AudioSet]
+
+## Pool of reusable 2D AudioStreamPlayers per bus.
+## Used for non-positional one-shot sounds (UI, global SFX).
+var _pool_2d: Dictionary = {}  # Dictionary[StringName, Array[AudioStreamPlayer]]
+
+## Tracks when each 2D AudioStreamPlayer started playing.
+## Used to determine which voice to steal.
+var _started_at_msec: Dictionary = {}  # Dictionary[int, int]
+
+## Pool of reusable 3D AudioStreamPlayers per bus.
+## Used for positional one-shot sounds.
+var _pool_3d: Dictionary = {}  # Dictionary[StringName, Array[AudioStreamPlayer3D]]
+
+## Tracks when each 3D AudioStreamPlayer started playing.
+## Used to determine which voice to steal.
+var _started_at_msec_3d: Dictionary = {}  # Dictionary[int, int]
+
+## Persistent 3D players that follow scene nodes.
+## Key: owner instance id
+## Value: Dictionary[full_audio_id, AudioStreamPlayer3D]
+##
+## This is intentionally NOT pooled:
+## persistent emitters map 1:1 to world objects (machines, wind zones, etc.).
+var _follow_players: Dictionary = {}
+
 ## Per-layer A/B players for smooth transitions.
 ## layer_name -> [playerA, playerB]
 ##
 ## We use two players per layer so we can crossfade within the layer:
 ## - old layer track fades out
 ## - new layer track fades in
-var _music_layers: Dictionary = {} # Dictionary[StringName, Array[AudioStreamPlayer]]
+var _music_layers: Dictionary = {}  # Dictionary[StringName, Array[AudioStreamPlayer]]
 
 ## Which player is currently active per layer.
 ## layer_name -> 0 or 1
@@ -83,8 +79,8 @@ var _music_layer_tweens: Dictionary = {}
 ## Plays on top of all layers without interrupting them.
 var _music_stinger: AudioStreamPlayer
 
+# --- Lifecycle ---
 
-@export_category("Lifecycle")
 
 ## Initializes the audio system:
 ## - Builds the audio set lookup table
@@ -106,8 +102,8 @@ func _init_music_layers() -> void:
 	add_child(_music_stinger)
 
 
+# --- Registry Resolution ---
 
-@export_category("Registry Resolution")
 
 ## Builds the internal lookup table of all audio sets from all registries.
 ## Also validates that referenced audio buses exist.
@@ -130,16 +126,21 @@ func _rebuild_index() -> void:
 			_sets[id] = audio_set
 
 			## Warn early if the set references a non-existent bus
-			if audio_set != null \
-			and audio_set.bus_name != StringName() \
-			and not _bus_exists(audio_set.bus_name):
+			if (
+				audio_set != null
+				and audio_set.bus_name != StringName()
+				and not _bus_exists(audio_set.bus_name)
+			):
 				push_warning(
-					"AudioManager: AudioSet '%s' references missing bus '%s'"
-					% [id, audio_set.bus_name]
+					(
+						"AudioManager: AudioSet '%s' references missing bus '%s'"
+						% [id, audio_set.bus_name]
+					)
 				)
 
 
-@export_category("Voice Pool Initialization")
+# --- Voice Pool Initialization ---
+
 
 ## Creates per-bus pools of AudioStreamPlayers based on configured limits.
 ## Separate pools are created for 2D and 3D one-shot playback.
@@ -177,7 +178,8 @@ func _init_voice_pools() -> void:
 		_pool_3d[bus_name] = arr3
 
 
-@export_category("Bus Configuration")
+# --- Bus Configuration ---
+
 
 ## Returns a map of bus_name -> max_voices.
 ## Uses sensible defaults and allows overrides via AudioBusConfig resources.
@@ -202,7 +204,8 @@ func _get_bus_limits() -> Dictionary:
 	return limits
 
 
-@export_category("Playback")
+# --- Playback ---
+
 
 ## Plays a non-positional (2D) one-shot sound by registry ID.
 ## Intended for UI, global feedback, and non-spatial SFX.
@@ -226,18 +229,17 @@ func play_at(id: StringName, world_pos: Vector3, vol_db_offset := 0.0) -> void:
 ## Returns the AudioStreamPlayer3D so callers can stop or tweak it later.
 ## This does NOT use pooling; it attaches the player to the owner node.
 func play_follow(
-	id: StringName,
-	sound_owner: Node3D,
-	vol_db_offset := 0.0,
-	autoplay := true
+	id: StringName, sound_owner: Node3D, vol_db_offset := 0.0, autoplay := true
 ) -> AudioStreamPlayer3D:
 	var audio_set := _get_set_or_warn(id)
 	if audio_set == null:
 		return null
-	return _play_set_follow(audio_set, StringName(id), _resolve_bus(audio_set), sound_owner, vol_db_offset, autoplay)
+	return _play_set_follow(
+		audio_set, StringName(id), _resolve_bus(audio_set), sound_owner, vol_db_offset, autoplay
+	)
 
 
-@export_category("Direct Playback")
+# --- Direct Playback ---
 
 ## Direct playback: play a sound resource without registering it.
 ## This lets a scene keep its own sounds next to it, e.g.
@@ -255,6 +257,7 @@ func play_follow(
 ## `bus` defaults to the AudioSet's bus, or "SFX" for streams and cues.
 ## Direct sounds share the same per-bus voice pools and limits as ID-based ones.
 
+
 ## 2D (non-positional) one-shot from a resource.
 func play_sound(sound: Resource, vol_db_offset := 0.0, bus: StringName = &"") -> void:
 	var audio_set := _as_set(sound)
@@ -263,7 +266,9 @@ func play_sound(sound: Resource, vol_db_offset := 0.0, bus: StringName = &"") ->
 
 
 ## 3D one-shot from a resource at a world position.
-func play_sound_at(sound: Resource, world_pos: Vector3, vol_db_offset := 0.0, bus: StringName = &"") -> void:
+func play_sound_at(
+	sound: Resource, world_pos: Vector3, vol_db_offset := 0.0, bus: StringName = &""
+) -> void:
 	var audio_set := _as_set(sound)
 	if audio_set != null:
 		_play_set_3d(audio_set, _resolve_bus(audio_set, bus), world_pos, vol_db_offset)
@@ -283,10 +288,13 @@ func play_sound_follow(
 		return null
 	# Key follow players by the resource itself so repeated calls reuse the player.
 	var key := StringName("res:%d" % sound.get_instance_id())
-	return _play_set_follow(audio_set, key, _resolve_bus(audio_set, bus), sound_owner, vol_db_offset, autoplay)
+	return _play_set_follow(
+		audio_set, key, _resolve_bus(audio_set, bus), sound_owner, vol_db_offset, autoplay
+	)
 
 
-@export_category("Playback Internals")
+# --- Playback Internals ---
+
 
 func _play_set_2d(audio_set: AudioSet, bus_name: StringName, vol_db_offset: float) -> void:
 	var cue := audio_set.pick()
@@ -302,7 +310,9 @@ func _play_set_2d(audio_set: AudioSet, bus_name: StringName, vol_db_offset: floa
 	_started_at_msec[p.get_instance_id()] = Time.get_ticks_msec()
 
 
-func _play_set_3d(audio_set: AudioSet, bus_name: StringName, world_pos: Vector3, vol_db_offset: float) -> void:
+func _play_set_3d(
+	audio_set: AudioSet, bus_name: StringName, world_pos: Vector3, vol_db_offset: float
+) -> void:
 	var cue := audio_set.pick()
 	if cue == null or cue.stream == null:
 		return
@@ -380,7 +390,12 @@ func _as_set(sound: Resource) -> AudioSet:
 		cue = AudioCue.new()
 		cue.stream = sound
 	else:
-		push_warning("AudioManager: play_sound* expects AudioStream, AudioCue or AudioSet, got %s" % sound.get_class())
+		push_warning(
+			(
+				"AudioManager: play_sound* expects AudioStream, AudioCue or AudioSet, got %s"
+				% sound.get_class()
+			)
+		)
 		return null
 
 	var wrapper := AudioSet.new()
@@ -389,7 +404,8 @@ func _as_set(sound: Resource) -> AudioSet:
 	return wrapper
 
 
-@export_category("Music Playback")
+# --- Music Playback ---
+
 
 ## Starts or switches a looping music layer by ID, crossfading within that layer.
 ##
@@ -401,10 +417,7 @@ func _as_set(sound: Resource) -> AudioSet:
 ## - Each layer has two players (A/B) so the old track can fade out while new fades in.
 ## - This is layered music, not beat-locked. If you later need bar/beat sync, we can extend it.
 func music_layer_to(
-	layer: StringName,
-	id: StringName,
-	fade_sec: float = -1.0,
-	target_db_override: float = NAN
+	layer: StringName, id: StringName, fade_sec: float = -1.0, target_db_override: float = NAN
 ) -> void:
 	if fade_sec < 0.0:
 		fade_sec = default_music_fade_sec
@@ -459,10 +472,11 @@ func music_layer_to(
 
 	## Finalize: stop old, remember which player is active for this layer
 	tw.set_parallel(false)
-	tw.tween_callback(func():
-		from_p.stop()
-		from_p.volume_db = -80.0
-		_music_layer_active_idx[layer] = to_idx
+	tw.tween_callback(
+		func():
+			from_p.stop()
+			from_p.volume_db = -80.0
+			_music_layer_active_idx[layer] = to_idx
 	)
 
 	_music_layer_tweens[layer] = tw
@@ -470,11 +484,7 @@ func music_layer_to(
 
 ## Smoothly changes a layer’s volume (intensity) without switching its stream.
 ## Perfect for "flow" systems where drums ramp up/down.
-func music_layer_gain(
-	layer: StringName,
-	target_db: float,
-	fade_sec: float = -1.0
-) -> void:
+func music_layer_gain(layer: StringName, target_db: float, fade_sec: float = -1.0) -> void:
 	if fade_sec < 0.0:
 		fade_sec = default_music_fade_sec
 
@@ -513,9 +523,10 @@ func music_layer_stop(layer: StringName, fade_sec: float = -1.0) -> void:
 	_kill_layer_tween(layer)
 	var tw := create_tween()
 	tw.tween_property(p, "volume_db", -80.0, fade_sec)
-	tw.tween_callback(func():
-		p.stop()
-		p.volume_db = -80.0
+	tw.tween_callback(
+		func():
+			p.stop()
+			p.volume_db = -80.0
 	)
 	_music_layer_tweens[layer] = tw
 
@@ -544,7 +555,8 @@ func music_stinger(id: StringName, vol_db_offset := 0.0) -> void:
 	_music_stinger.play()
 
 
-@export_category("Voice Pooling")
+# --- Voice Pooling ---
+
 
 ## Returns an available pooled 2D AudioStreamPlayer for a given bus.
 ## Reuses idle players or steals the oldest active one if necessary.
@@ -610,7 +622,8 @@ func _get_voice_3d(bus_name: StringName) -> AudioStreamPlayer3D:
 	return oldest
 
 
-@export_category("Helpers")
+# --- Helpers ---
+
 
 ## Resolves an AudioSet by ID and warns if it does not exist.
 func _get_set_or_warn(id: StringName) -> AudioSet:
@@ -633,10 +646,7 @@ func _resolve_bus(audio_set: AudioSet, override: StringName = &"") -> StringName
 
 ## Applies cue parameters to a 2D AudioStreamPlayer.
 func _apply_cue_to_player_2d(
-	p: AudioStreamPlayer,
-	bus_name: StringName,
-	cue: AudioCue,
-	vol_db_offset: float
+	p: AudioStreamPlayer, bus_name: StringName, cue: AudioCue, vol_db_offset: float
 ) -> void:
 	p.bus = String(bus_name)
 	p.stream = cue.stream
@@ -650,10 +660,7 @@ func _apply_cue_to_player_2d(
 
 ## Applies cue parameters to a 3D AudioStreamPlayer.
 func _apply_cue_to_player_3d(
-	p: AudioStreamPlayer3D,
-	bus_name: StringName,
-	cue: AudioCue,
-	vol_db_offset: float
+	p: AudioStreamPlayer3D, bus_name: StringName, cue: AudioCue, vol_db_offset: float
 ) -> void:
 	p.bus = String(bus_name)
 	p.stream = cue.stream
@@ -696,7 +703,8 @@ func _kill_layer_tween(layer: StringName) -> void:
 	_music_layer_tweens.erase(layer)
 
 
-@export_category("Validation")
+# --- Validation ---
+
 
 ## Checks whether a given audio bus exists in the current AudioServer layout.
 func _bus_exists(bus_name: StringName) -> bool:

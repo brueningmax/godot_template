@@ -1,5 +1,5 @@
-extends Control
 class_name UIButton
+extends Control
 
 signal pressed
 signal button_down
@@ -14,9 +14,10 @@ signal button_up
 	get:
 		return $Button.text
 
+var base_pos := Vector2.ZERO
+
 @onready var btn: Button = $Button
 
-var base_pos := Vector2.ZERO
 
 func _ready() -> void:
 	base_pos = btn.position
@@ -32,19 +33,17 @@ func _ready() -> void:
 
 func _on_hover() -> void:
 	Audio.play(&"ui.hover")
-	create_tween().tween_property(
-		btn, "position:y",
-		base_pos.y + hover_offset,
-		anim_duration
-	).set_trans(Tween.TRANS_CUBIC)
+	(
+		create_tween()
+		. tween_property(btn, "position:y", base_pos.y + hover_offset, anim_duration)
+		. set_trans(Tween.TRANS_CUBIC)
+	)
 
 
 func _on_unhover() -> void:
-	create_tween().tween_property(
-		btn, "position:y",
-		base_pos.y,
-		anim_duration
-	).set_trans(Tween.TRANS_CUBIC)
+	create_tween().tween_property(btn, "position:y", base_pos.y, anim_duration).set_trans(
+		Tween.TRANS_CUBIC
+	)
 
 
 func _on_pressed() -> void:
@@ -53,6 +52,7 @@ func _on_pressed() -> void:
 	t.tween_property(btn, "position:y", base_pos.y + 2, 0.06)
 	t.tween_property(btn, "position:y", base_pos.y + hover_offset, 0.08)
 	pressed.emit()
+
 
 func _on_button_down() -> void:
 	button_down.emit()

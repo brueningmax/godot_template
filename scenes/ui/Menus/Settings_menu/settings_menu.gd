@@ -1,5 +1,5 @@
-extends MenuBase
 class_name SettingsMenu
+extends MenuBase
 ## Settings menu built from the ROWS list below.
 ##
 ## Behaviour: changes apply immediately (preview, not saved). Apply saves and
@@ -59,6 +59,7 @@ func _on_open() -> void:
 
 
 # --- Rows -------------------------------------------------------------------
+
 
 func _build_row(row: Dictionary) -> void:
 	var box := HBoxContainer.new()

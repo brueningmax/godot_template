@@ -2,6 +2,7 @@ class_name RngStream
 
 var _rng: RandomNumberGenerator
 
+
 func _init(custom_seed: int) -> void:
 	_rng = RandomNumberGenerator.new()
 	_rng.seed = custom_seed
@@ -9,6 +10,7 @@ func _init(custom_seed: int) -> void:
 
 func rand_int(min_val: int, max_val: int) -> int:
 	return _rng.randi_range(min_val, max_val)
+
 
 func rand_float() -> float:
 	return _rng.randf()

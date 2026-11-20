@@ -15,7 +15,9 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	var is_button := event is InputEventKey or event is InputEventMouseButton or event is InputEventJoypadButton
+	var is_button := (
+		event is InputEventKey or event is InputEventMouseButton or event is InputEventJoypadButton
+	)
 	if is_button and event.is_pressed() and not event.is_echo():
 		skipped.emit()
 		get_viewport().set_input_as_handled()
