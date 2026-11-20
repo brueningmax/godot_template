@@ -1,0 +1,29 @@
+name: Feature request
+description: A new system, or an improvement to an existing one.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What's missing or painful today? Which games or situations need it?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should the template provide? Rough API or usage example welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: criteria
+    attributes:
+      label: Acceptance criteria
+      description: How do we know it's done?
+      placeholder: |
+        - [ ] ...
+        - [ ] Tests cover the new behaviour
+        - [ ] docs/TEMPLATE_GUIDE.md has a section for it
+    validations:
+      required: true

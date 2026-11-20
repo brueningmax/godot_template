@@ -496,6 +496,8 @@ The version is pinned in several places that must agree:
 
 ## Conventions
 
+Folder layout, naming rules, the rules that keep the template working, and the issue → branch → PR workflow are in **[CONTRIBUTING.md](../CONTRIBUTING.md)**. AI coding agents get the same rules, plus headless-testing gotchas, in **[CLAUDE.md](../CLAUDE.md)**. Issues use the bug or feature forms, and PRs use `.github/pull_request_template.md`.
+
 ### Code style
 
 Scripts follow the [official GDScript style guide](https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/gdscript_styleguide.html), enforced by [gdtoolkit](https://github.com/Scony/godot-gdscript-toolkit) (version pinned in `requirements-dev.txt`):
@@ -582,4 +584,3 @@ Good to know:
 - CI already checks out with `lfs: true`.
 - GitHub limits free LFS storage and download bandwidth. Check your plan's quota if the project has many large assets or CI runs.
 
-> Planned: folder and file naming, contribution flow: [#14](https://github.com/brueningmax/godot_template/issues/14).

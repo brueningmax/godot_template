@@ -52,6 +52,7 @@ docs/        Documentation
 ## Documentation
 
 - **[Template guide](docs/TEMPLATE_GUIDE.md)**: how each system works, how to use it, and the non-obvious parts. Start here.
+- [Contributing](CONTRIBUTING.md): folder layout, naming, workflow.
 - [Audio system](globals/audio_manager/README.md): full reference for the audio manager.
 
 ## Roadmap
