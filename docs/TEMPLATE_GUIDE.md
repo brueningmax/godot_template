@@ -87,6 +87,7 @@ Autoloads are created in the order listed in **Project Settings → Globals → 
 5. `SettingsManager`: loads `user://settings.cfg` and applies volumes, so it must come after the audio bus layout is active (always true) and after `SignalBus`.
 6. `GameState`
 7. `SceneManager`
+8. `Debug`: a **scene** (`globals/debug/debug.tscn`) so its options are editable in the inspector. Last, because it uses all the others.
 
 **Gotcha:** an autoload's name and its script's `class_name` must not be the same, or the global is ambiguous. That's why the scene manager's script is `class_name MainRoot` while the autoload is called `SceneManager`.
 
@@ -267,6 +268,8 @@ This works the same when the scene is run on its own (F6), because `GameState` i
 
 **Mouse mode:** the mode passed to `enter_gameplay()` is restored on every resume. Menus always get a visible cursor. Don't set `Input.mouse_mode` anywhere else, or the two will fight.
 
+`GameState.pause(show_menu := true)`: pass `false` to freeze gameplay without opening the pause menu. The debug console does this.
+
 **Pause menu buttons:** Resume → `resume()`, Settings → the [settings menu](#settings-menu) (overlay), Restart → `SceneManager.reload_current()`, Quit → main menu. Starting any scene change also unpauses and closes overlays, so a paused tree never leaks into the next scene.
 
 **Overlay menus:** `GameState.push_menu(menu)` / `pop_menu()` show menus over the current scene on a `CanvasLayer` (layer 50, below the scene fade). They show a dimmer and handle back navigation. Menus are reused: popping hides a menu rather than freeing it. `GameState.open_settings()` opens the shared settings menu.
@@ -381,7 +384,44 @@ Gotchas:
 
 Gotcha: previewing **instantiates** the scene, so its `_ready()` runs, along with any side effects (sounds, autoload calls, changing the mouse mode).
 
-> Planned: a debug overlay and console are tracked in [#20](https://github.com/brueningmax/godot_template/issues/20). It will show `Log.recent()`, see [Logging](#logging).
+### Debug overlay and console
+
+Autoload `Debug` (`globals/debug/`). In debug builds (editor runs, debug exports) it gives you:
+
+| Key | What |
+| --- | --- |
+| **F1** (`debug_overlay`) | Overlay, top-right: FPS and frame time, draw calls and objects, current scene and `SceneKey`, `GameState` state, time scale, seed, errors and warnings logged so far. |
+| **The key left of 1** (`debug_console`) | Console: the recent log (colored by level, including engine errors, see [Logging](#logging)) and a command line. ↑/↓ browse history, **Tab** completes command names and scene keys, **Esc** or the same key closes it. |
+| — | The **seed** is always shown small in the bottom-right corner, so it's in every screenshot. Click it to copy. |
+
+The console key is bound by **physical position**, the key left of `1`: `~` on US keyboards, `^` on German ones, `²` on French ones. It's an input action, so it can be rebound like any other.
+
+**The console pauses the game while it's open.** Games usually read movement by polling (`Input.get_vector()` in `_process`), and GUI focus doesn't block polling, so typing `wasd` would move the player. The console calls `GameState.pause(false)`, which pauses without the pause menu, and resumes on close **only if it paused**. Opening it over the pause menu leaves the game paused.
+
+**Built-in commands:** `help [command]`, `clear`, `seed [value]` (shows and copies, or sets), `scene <SCENE_KEY>`, `reload`, `timescale <x>`, `log <Category> <level>`, `pause`, `resume`, `quit`.
+
+**Adding your own (cheats, test helpers):**
+
+```gdscript
+func _ready() -> void:
+	Debug.register_command("gold", _cmd_gold, "Add gold", "<amount>")
+
+func _cmd_gold(args: PackedStringArray) -> String:
+	if args.is_empty() or not args[0].is_valid_int():
+		return "usage: gold <amount>"
+	gold += args[0].to_int()
+	return "gold: %d" % gold
+```
+
+- The callable always receives a `PackedStringArray`. Words are split on spaces, and `"double quotes"` keep words together.
+- Return a `String` to print it, or nothing.
+- Validate the arguments yourself. A runtime error inside a command is reported like any script error (and in the editor the debugger stops on it), so commands can't crash a debug session silently, but they don't get special error handling either.
+- A command whose object was freed reports "no longer valid" instead of crashing. `Debug.unregister_command("gold")` removes one.
+- `Debug.execute("gold 50")` runs a line from code, which is handy in tests.
+
+**Release builds:** the tools are **off**. No UI is created, and `register_command()` / `execute()` do nothing, so game code needs no `if`. To turn them on for testers, start the game with `-- --debug-tools`, or tick **Enabled In Release** on `globals/debug/debug.tscn`. **Enabled In Debug** and **Show Seed** are on the same node.
+
+Layering: the tools draw on canvas layer **120**, above `GameState`'s menus (50) and `SceneManager`'s fades (100). They run with `PROCESS_MODE_ALWAYS`, so they work while paused.
 
 ### Script checker
 

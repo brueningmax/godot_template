@@ -41,4 +41,5 @@ gdformat . && gdlint .
 - **In a `--script` SceneTree harness**, autoload names aren't globals at compile time. Fetch them with `root.get_node("SceneManager")`, and look up enums with `load("res://…/scene_registry.gd").SceneKey`.
 - **Always bound a headless run:** wrap it in `timeout`, and give harness scripts a watchdog (`create_timer(N).timeout.connect(quit)`). A runtime error before `quit()` otherwise hangs forever.
 - `--script` mode doesn't load the main scene. Instance `globals/scene_manager/main.tscn` yourself to test the boot flow.
+- **Headless windows are 64×64 px.** Don't assert pixel sizes of UI in tests; assert anchors/offsets. To *see* UI, render a real frame: `xvfb-run -a -s "-screen 0 1280x720x24" godot --rendering-driver opengl3 --audio-driver Dummy --resolution 1152x648 --script <harness>` and save `root.get_viewport().get_texture().get_image()` with `save_png()` after `await RenderingServer.frame_post_draw`.
 - Smoke runs need `--fixed-fps 60` so a frame count equals game time. Headless frames otherwise run unthrottled.

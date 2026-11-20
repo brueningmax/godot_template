@@ -74,12 +74,15 @@ func enter_gameplay(mouse_mode: Input.MouseMode = Input.MOUSE_MODE_VISIBLE) -> v
 	_set_state(State.PLAYING)
 
 
-func pause() -> void:
+## Pauses gameplay. With show_menu = false nothing is opened, e.g. for the
+## debug console, which needs the game frozen but not the pause menu.
+func pause(show_menu := true) -> void:
 	if state != State.PLAYING:
 		return
 	_set_paused(true)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	push_menu(_get_pause_menu())
+	if show_menu:
+		push_menu(_get_pause_menu())
 	_set_state(State.PAUSED)
 	SignalBus.pause_toggled.emit(true)
 
