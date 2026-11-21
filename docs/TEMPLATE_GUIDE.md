@@ -177,31 +177,53 @@ var vol: float = SettingsManager.get_setting("audio", "master_volume", 0.8)
 SettingsManager.set_setting("display", "vsync", false)
 ```
 
+### All settings
+
+| Section / key | Default | Values | Applied to |
+| --- | --- | --- | --- |
+| `audio/master_volume` | `0.8` | 0–1 | bus `Master` |
+| `audio/music_volume` | `0.7` | 0–1 | bus `Music` |
+| `audio/sfx_volume` | `1.0` | 0–1 | bus `SFX` |
+| `audio/ambient_volume` | `1.0` | 0–1 | bus `Ambient` |
+| `audio/ui_volume` | `1.0` | 0–1 | bus `UI` |
+| `display/window_mode` | `"fullscreen"` (release), `"windowed"` (debug builds) | `"windowed"`, `"fullscreen"` (borderless), `"exclusive"` | `DisplayServer.window_set_mode()` |
+| `display/resolution` | `Vector2i(1280, 720)` | any `Vector2i` | window size, only while windowed (clamped to the screen, centred) |
+| `display/vsync` | `true` | bool | `DisplayServer.window_set_vsync_mode()` |
+| `display/max_fps` | `0` | int, 0 = no cap | `Engine.max_fps` |
+| `interface/ui_scale` | `1.0` | 0.5–3 (menu: 0.75–2) | `get_tree().root.content_scale_factor` |
+| `interface/language` | `""` | `""` = system language, or a locale like `"de"` | `TranslationServer.set_locale()` |
+
 Non-obvious behaviour:
 
-- **Defaults live in the `DEFAULTS` constant** at the top of the script. On load, values from the file are merged over the defaults, so new keys you add there appear automatically for existing players. `reset_to_defaults()` puts everything back to `DEFAULTS` (without saving).
+- **Defaults live in the `DEFAULTS` constant** at the top of the script, and `SettingsManager.defaults()` returns them for the running build. On load, values from the file are merged over the defaults, so new keys you add appear automatically for existing players. `reset_to_defaults()` puts everything back (without saving).
+- **Debug builds start windowed.** Editor runs and debug exports use `"windowed"` as the default window mode, so running from the editor doesn't take over the screen. Release builds default to borderless fullscreen. A value saved in the settings file wins in both.
+- **Borderless vs. exclusive fullscreen:** borderless (`"fullscreen"`) alt-tabs instantly and is the better default. Exclusive can give slightly lower latency on Windows.
+- **UI scale** sets the root window's `content_scale_factor`, so it scales everything drawn on canvas layers (UI and 2D), not 3D. If a 2D game needs its world at a fixed size, scale only the UI's theme instead.
+- **Schema version:** the file stores `[meta] version` (`SCHEMA_VERSION`, currently 2). Adding a key needs no bump. When you **rename** a key or change what its value means, bump `SCHEMA_VERSION` and convert old files in `_migrate()`. Version 1 had `display/fullscreen` (bool); it's converted to `window_mode` (`true` → `"exclusive"`, which is what it did).
 - The file is `settings_path` (default `user://settings.cfg`). Tests point it at a temporary file so they never touch the player's settings.
 - **`set_setting()` applies and saves immediately** by default, writing the whole file. Pass `persist = false` to apply without saving (`set_setting("audio", "music_volume", v, false)`), e.g. while a slider is dragged, and call `save_settings()` when you're done.
 - `snapshot()` returns a deep copy of every setting, and `restore(snapshot)` applies one again without saving. The settings menu uses these to revert.
 - It then emits `SignalBus.setting_changed(section, key, value)`.
-- Only the `audio` and `display` sections are applied to the engine. Other sections are stored and saved, but you have to apply them yourself.
-- Volumes are **linear 0–1**. They're converted to dB, and the bus is muted at ≤ 0.001.
-- `fullscreen` defaults to `true`, which uses exclusive fullscreen.
+- The `audio`, `display` and `interface` sections are applied to the engine. Other sections are stored and saved, but you have to apply them yourself.
+- Volumes are **linear 0–1**. They're converted to dB, and the bus is muted at ≤ 0.001. `VOLUME_BUSES` maps each key to its bus.
 
 ### Settings menu
 
 `scenes/ui/menus/settings_menu/`, opened by **Options** in the main menu and **Settings** in the pause menu, both through `GameState.open_settings()`.
 
-- **Preview, Apply, Back:** every change applies immediately, so you hear and see it, but it isn't saved. **Apply** saves and closes. **Back** or Esc restores the values from when the menu opened.
-- The rows are built at runtime from the `ROWS` list at the top of `settings_menu.gd`.
+- **Preview, Apply, Back:** every change applies immediately, so you hear and see it, but it isn't saved. **Apply** saves and closes. **Back** or Esc restores the values from when the menu opened. This includes display changes like the window mode.
+- The rows are built at runtime from the `ROWS` list at the top of `settings_menu.gd`, grouped into tabs by each row's `tab` (tabs appear in the order of their first row).
+- **Row types:**
+  - `SLIDER`: optional `min`, `max`, `step` (default 0–1 in steps of 0.05) and `format` (`"percent"`, the default, `"x"` for `1.25x`, or `"int"`).
+  - `TOGGLE`: a switch for a bool.
+  - `OPTION`: a dropdown. `options` is a list of `[value, "Label"]` pairs, or the name of a method on the menu that returns one (used for window sizes and languages, which are only known at runtime). A saved value that isn't in the list, e.g. a window size edited into the file, is added to the list so it still shows.
 
 ### Adding a setting end to end
 
-1. **Default:** add the key to `DEFAULTS` in `settings_manager.gd`, e.g. `"display": {..., "max_fps": 0}`. Existing players get the default automatically.
-2. **Apply:** handle the key in `_apply_display()` (or a new `_apply_<section>()` added to the `match` in `_apply_setting()`), e.g. `"max_fps": Engine.max_fps = value`.
-3. **Menu:** add one entry to `ROWS` in `settings_menu.gd`: `{section = "display", key = "max_fps", label = "FPS cap", type = RowType.SLIDER}`. Sliders currently cover 0–1. A different range or a dropdown needs a new `RowType`.
-
-> Planned: more settings (window mode, resolution, UI scale, language, FPS cap) in [#17](https://github.com/brueningmax/godot_template/issues/17).
+1. **Default:** add the key to `DEFAULTS` in `settings_manager.gd`, e.g. `"interface": {..., "subtitles": true}`. Existing players get the default automatically.
+2. **Apply:** handle the key in the matching `_apply_<section>()` (or a new one added to the `match` in `_apply_setting()`), e.g. `"subtitles": Subtitles.enabled = value`.
+3. **Menu:** add one entry to `ROWS` in `settings_menu.gd`: `{tab = "Interface", section = "interface", key = "subtitles", label = "Subtitles", type = RowType.TOGGLE}`.
+4. **Test:** extend `test/unit/test_settings_manager.gd` (applying) and, for a new row type, `test/integration/test_settings_menu.gd`.
 
 ## SaveManager
 

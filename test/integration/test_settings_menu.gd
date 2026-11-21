@@ -86,3 +86,45 @@ func _file_value() -> float:
 	var cfg := ConfigFile.new()
 	cfg.load(TEST_PATH)
 	return cfg.get_value("audio", "music_volume", -1.0)
+
+
+# --- Tabs and option rows (#17) ---
+
+
+func test_rows_are_grouped_in_tabs() -> void:
+	var titles := []
+	for i in _menu().tabs.get_tab_count():
+		titles.append(_menu().tabs.get_tab_title(i))
+	assert_eq(titles, ["Audio", "Display", "Interface"])
+	for row in SettingsMenu.ROWS:
+		assert_has(_menu()._controls, "%s/%s" % [row.section, row.key])
+
+
+func test_option_row_previews_and_reverts() -> void:
+	var option: OptionButton = _menu()._controls["display/max_fps"]
+	assert_eq(option.get_item_text(option.selected), "Unlimited")
+	option.select(2)
+	option.item_selected.emit(2)
+	assert_eq(SettingsManager.get_setting("display", "max_fps"), 60)
+	assert_eq(Engine.max_fps, 60)
+	await press("ui_cancel")
+	await wait_seconds(0.3)
+	assert_eq(SettingsManager.get_setting("display", "max_fps"), 0)
+	assert_eq(Engine.max_fps, 0)
+
+
+func test_unknown_value_is_still_shown() -> void:
+	SettingsManager.set_setting("display", "resolution", Vector2i(1000, 500), false)
+	_menu()._on_open()
+	var option: OptionButton = _menu()._controls["display/resolution"]
+	assert_eq(option.get_item_text(option.selected), str(Vector2i(1000, 500)))
+
+
+func test_ui_scale_slider_uses_its_range() -> void:
+	var slider: HSlider = _menu()._controls["interface/ui_scale"]
+	assert_almost_eq(slider.min_value, 0.75, 0.001)
+	assert_almost_eq(slider.max_value, 2.0, 0.001)
+	slider.value = 1.25
+	assert_almost_eq(get_tree().root.content_scale_factor, 1.25, 0.001)
+	var readout := slider.get_parent().get_child(slider.get_index() + 1) as Label
+	assert_eq(readout.text, "1.25x")
