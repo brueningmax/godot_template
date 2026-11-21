@@ -15,17 +15,18 @@ How the template's systems work, how to use them, and what isn't obvious from th
 7. [SaveManager](#savemanager)
 8. [Data definitions](#data-definitions)
 9. [Command queue](#command-queue)
-10. [RngManager](#rngmanager)
-11. [GameState and pausing](#gamestate-and-pausing)
-12. [SceneManager and SceneRegistry](#scenemanager-and-sceneregistry)
-13. [Audio](#audio)
-14. [Menus and UI](#menus-and-ui)
-15. [Localization](#localization)
-16. [Debug tools](#debug-tools)
-17. [Debugging in VS Code](#debugging-in-vs-code)
-18. [Testing](#testing)
-19. [CI and releases](#ci-and-releases)
-20. [Conventions](#conventions)
+10. [State machine](#state-machine)
+11. [RngManager](#rngmanager)
+12. [GameState and pausing](#gamestate-and-pausing)
+13. [SceneManager and SceneRegistry](#scenemanager-and-sceneregistry)
+14. [Audio](#audio)
+15. [Menus and UI](#menus-and-ui)
+16. [Localization](#localization)
+17. [Debug tools](#debug-tools)
+18. [Debugging in VS Code](#debugging-in-vs-code)
+19. [Testing](#testing)
+20. [CI and releases](#ci-and-releases)
+21. [Conventions](#conventions)
 
 ---
 
@@ -419,6 +420,51 @@ Good to know:
 - `command.queue` is set only while the command runs, and cleared afterwards, so finished commands in the history don't keep the queue alive.
 - Commands are `RefCounted`, not nodes. To wait for something, await a signal of a node (`await tween.finished`, `await get_tree().create_timer(0.3).timeout` through `Engine.get_main_loop()`).
 - `execute()` runs to its first `await` immediately inside `run()`. Code after `queue.enqueue()` doesn't run "after" the command unless you `await queue.run()`.
+
+## State machine
+
+`globals/state_machine/`: `StateMachine` and `MachineState`, node classes (not an autoload) for anything that has states: a player (idle, walk, jump), an enemy's AI (patrol, chase, attack), a door, a UI flow.
+
+```
+Player (CharacterBody2D)
+  StateMachine        initial_state = Idle (empty = first child)
+    Idle   (script extends MachineState)
+    Walk
+    Jump
+```
+
+Each child `MachineState` is a state named after its node. Only the **current** state gets the per-frame calls. The machine forwards `_process`, `_physics_process` and `_unhandled_input` to it as `update()`, `physics_update()` and `handle_input()`:
+
+```gdscript
+# walk.gd
+extends MachineState
+
+func enter(previous: StringName, data: Dictionary) -> void:
+	target.play_animation(&"walk")      # target = the machine's parent (Player)
+
+func physics_update(delta: float) -> void:
+	var dir := Input.get_vector("left", "right", "up", "down")
+	if dir == Vector2.ZERO:
+		transition_to(&"Idle")
+	target.velocity = dir * target.speed
+	target.move_and_slide()
+
+func handle_input(event: InputEvent) -> void:
+	if event.is_action_pressed("jump"):
+		transition_to(&"Jump", {"from_run": true})   # data arrives in Jump.enter()
+```
+
+From outside: `$StateMachine.transition_to(&"Hurt", {"damage": 3})`, `is_in(&"Walk")`, `current_name()`, `previous_name()`, `history` (the last `history_limit` state names), and the signal `state_changed(from, to)`.
+
+Behaviour worth knowing:
+
+- **Order:** `exit(next)` on the old state, then `enter(previous, data)` on the new one, then `state_changed`. The initial state enters in the machine's `_ready()` with `previous = &""`.
+- **Transitions during a transition are queued.** If `enter()` or `exit()` calls `transition_to()`, that runs after the current transition has finished, so `enter()` / `exit()` calls never interleave. (A "Landed" state can go straight on to "Idle" from its `enter()`.)
+- Switching to the current state does nothing. Pass `reenter = true` to exit and enter it again (e.g. restarting an attack).
+- An unknown state name is a `Log.error` (fails tests), and the machine stays where it is.
+- **Pausing** follows the normal `process_mode` rules: the machine and its states freeze with the tree unless you change their mode.
+- The class is `MachineState`, not `State`, so it can't collide with an enum called `State` (as in `GameState.State`). A global class with that name would shadow such enums in every script.
+- **Debugging:** transitions are logged at `debug` level as `[State] Player/StateMachine: Idle -> Walk` (`-- --log=State:debug`), and the console command `states` lists every machine with its current and recent states.
 
 ## RngManager
 
