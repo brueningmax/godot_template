@@ -164,8 +164,6 @@ Always use this typed form, never `connect("name", ...)` or `emit_signal("name")
 
 **Lifetime:** when a node is freed, Godot removes connections to its **methods** automatically, so `SignalBus.x.connect(_on_x)` needs no cleanup. **Lambdas are different.** A lambda stays connected until the object that *created* it is freed. If it only *captures* a node that is later freed, the next emit errors with "Lambda capture … was freed". From nodes that can be freed, connect methods, or disconnect lambdas in `_exit_tree()`.
 
-**Trap: only `SceneManager` may read `SceneRegistry.SCENES`.** `SCENES` `preload()`s every registered scene, and those scenes' scripts use the autoloads. If an autoload or a scene script reads `SCENES`, Godot sees a cycle and every affected script fails with "Could not resolve member \"SCENES\": Cyclic reference". Using the enum (`SceneRegistry.SceneKey.MAIN_MENU`) is fine anywhere. ([#22](https://github.com/brueningmax/godot_template/issues/22) removes the cause by storing paths instead of preloads.)
-
 ## SettingsManager
 
 `globals/settings_manager/settings_manager.gd`. Holds user preferences in sections, persists them to `user://settings.cfg` and applies them to the engine.
@@ -236,7 +234,7 @@ All values are derived with 32-bit FNV-1a hashing of `seed + "|" + key`, so a gi
 
 ## GameState and pausing
 
-`globals/game_state/game_state.gd`. Tracks whether the player is in a menu, playing, or paused, and is the **only** code that sets `get_tree().paused` and `Input.mouse_mode`. It's also the only handler of the `pause` action.
+`globals/game_state/game_state.gd`. Tracks whether the player is in a menu, playing, paused or loading, and is the **only** code that sets `get_tree().paused` and `Input.mouse_mode`. It's also the only handler of the `pause` action.
 
 ```
              enter_menu()                  enter_gameplay(mouse_mode)
@@ -264,7 +262,9 @@ This works the same when the scene is run on its own (F6), because `GameState` i
 | `PLAYING` | pause: tree paused, cursor shown, pause menu opened | nothing (B is often a gameplay button) |
 | `PAUSED` | back one step: settings → pause menu → resume | same |
 | `MENU` with an overlay menu open | close it | same |
-| during a scene transition | ignored | ignored |
+| during a scene transition (including `LOADING`) | ignored | ignored |
+
+**`LOADING`:** `SceneManager` sets it (through `GameState.begin_loading()` / `end_loading()`) while it waits for a scene to load from disk, and restores the state from before when the load finishes. The new scene's `_ready()` then declares its own state as usual. `pause()` does nothing while `LOADING`, since it only acts in `PLAYING`. Scenes that are already in memory skip this state.
 
 **Mouse mode:** the mode passed to `enter_gameplay()` is restored on every resume. Menus always get a visible cursor. Don't set `Input.mouse_mode` anywhere else, or the two will fight.
 
@@ -295,23 +295,35 @@ SceneManager.change_scene_with_screen(SceneRegistry.SceneKey.MAIN_MENU, SceneReg
 SceneManager.reload_current()   # restart the current scene from its file
 ```
 
-To add a scene, add a value to `SceneKey` and an entry in `SCENES` in `scene_registry.gd`. Add new keys at the **end** of the enum: exported `SceneKey` values, e.g. `start_scene` on `main.tscn`, are stored as numbers, so inserting a key in the middle shifts them.
+To add a scene, add a value to `SceneKey` and its file path to `PATHS` in `scene_registry.gd`. Add new keys at the **end** of the enum: exported `SceneKey` values, e.g. `start_scene` on `main.tscn`, are stored as numbers, so inserting a key in the middle shifts them.
 
-**Intermediate screens** (splash, "chapter 2" cards) are shown by `change_scene_with_screen()` for `screen_time` seconds. To make a screen skippable, give its root script a `signal skipped` and emit it, e.g. on any input. The manager listens from the moment the screen is added, so a skip during its fade-in also counts. `scenes/ui/splash_screen/splash_screen.gd` is the example.
+`SceneRegistry` holds **paths, not scenes**, so nothing is loaded at startup and any script may use it, including autoloads and registered scenes themselves. `SceneRegistry.path_of(key)` returns the path (`""` for an unknown key) and `SceneRegistry.key_name(key)` the key's name. A path that doesn't exist fails `test_scene_registry.gd`, so a moved scene file is caught by the tests. (Godot doesn't update paths inside strings when you move a file in the editor.)
 
-Non-obvious behaviour:
+### Loading and the loading screen
+
+Scenes load on a **background thread** (`ResourceLoader.load_threaded_request`):
+
+1. `change_scene()` starts the load straight away, so it runs while the old scene fades out.
+2. The old scene stays until the new one has loaded. If loading takes longer than `SceneManager.loading_screen_delay` (0.3 s by default), the **loading screen** appears on top of everything, with a progress bar.
+3. When the load is done, the loading screen is removed, the old scene is freed and the new one is added (and faded in).
+
+A scene that is already in memory (still referenced somewhere, or preloaded) is used directly, without the `LOADING` state or a loading screen. During `change_scene_with_screen()`, the next scene loads while the screen (splash) is shown, so the loading screen only appears if it's still not ready when the screen time ends.
+
+- **The loading screen** is the registered scene `SceneKey.LOADING_SCREEN` (`scenes/ui/loading_screen/`). Restyle it freely. `SceneManager` only calls its `set_progress(value: float)` (0–1), if it has one. Set `SceneManager.loading_screen_key = -1` to never show one. `loading_screen_delay = 0` shows it for every load from disk, which is handy for checking how it looks.
+- **Preloading:** `SceneManager.preload_scene(SceneRegistry.SceneKey.GAME_SCENE)` starts loading in the background, e.g. the next level while the player is in a menu or near the end of this one. The later change then starts instantly. A preloaded scene stays in memory until you change to it.
+- **Failures** are logged with `Log.error` (so they fail tests and CI) and the old scene stays. Load times are logged at `debug` level: `[Scene] loaded res://… in 12 ms`.
+- **Making a scene load well:** it's loaded off the main thread, so its resources must be loadable there. Plain scenes and resources are fine. Don't do heavy work in `_init()` of scripts that a scene's *resources* use. A scene's `_ready()` runs on the main thread as usual, after loading, and may still cause a hitch. Spread heavy setup over several frames there if needed.
+- **Web builds** are exported without threads (see [Exporting](#exporting-and-releases)), so loads there don't run in parallel with the game. They still work, but the loading screen may not animate while a big scene loads.
+
+### Non-obvious behaviour
 
 - **Don't use `get_tree().change_scene_to_file()`.** The manager keeps the active scene under `/root/SceneManager/SceneHolder`, and `get_tree().current_scene` is empty after boot. Use `SceneManager.current_scene` to get the active scene. (When you run a scene with F6, it is the tree's current scene until the first `change_scene()` takes it over. Setting `SceneManager.adopt_standalone = false` disables that; the test base class does so, so GUT's own runner scene is never taken over.)
-- **Calls during a transition are silently ignored.** You don't get an error. Check `SceneManager.is_changing()` if it matters.
+- **Calls during a transition are silently ignored.** You don't get an error. Check `SceneManager.is_changing()` if it matters. A transition includes the time spent loading.
 - The old scene is removed from the tree **before** the new one is added, so a reloaded scene keeps its node name (`HelloWorld`, not `@HelloWorld@2`) and node paths stay valid.
-- Fades and screen timers keep running even if the tree is paused.
+- Fades, screen timers and loading keep running even if the tree is paused.
 - **Payloads:** if the new scene has an `apply_payload(payload: Dictionary)` method, it's called **deferred**, after the scene's `_ready()`. Don't read payload data in `_ready()`.
-- Intermediate screens (splash, loading) are added to the manager's `Overlay` CanvasLayer (layer 100), above the game.
-- Every scene in `SCENES` is `preload()`ed, so all of them load at startup.
-
+- Intermediate screens (splash) and the loading screen are added to the manager's `Overlay` CanvasLayer (layer 100), above the game. Intermediate screens are loaded on the spot (not threaded), so keep them small.
 - Every change emits `SignalBus.scene_change_started` / `scene_change_finished`, and `SceneManager.scene_changed`.
-
-> Planned: lazy, threaded loading with a loading screen is tracked in [#22](https://github.com/brueningmax/godot_template/issues/22).
 
 ## Audio
 

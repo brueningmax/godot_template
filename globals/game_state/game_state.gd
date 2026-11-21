@@ -1,5 +1,5 @@
 extends Node
-## Global game state: MENU, PLAYING or PAUSED.
+## Global game state: MENU, PLAYING, PAUSED or LOADING.
 ##
 ## This is the ONLY place that sets get_tree().paused and Input.mouse_mode,
 ## and the only handler of the "pause" action. Scenes declare what they are
@@ -14,8 +14,12 @@ extends Node
 ##
 ## Menus shown over the game are kept on a small stack (push_menu/pop_menu),
 ## on a CanvasLayer below SceneManager's fade overlay.
+##
+## LOADING is set by SceneManager while it waits for a scene to load; pause
+## is ignored then. The state from before comes back when loading ends.
 
-enum State { MENU, PLAYING, PAUSED }
+## Add new states at the END (values may be stored as numbers).
+enum State { MENU, PLAYING, PAUSED, LOADING }
 
 const PAUSE_MENU_SCENE := preload("res://scenes/ui/menus/pause_menu/pause_menu.tscn")
 const SETTINGS_MENU_SCENE := preload("res://scenes/ui/menus/settings_menu/settings_menu.tscn")
@@ -25,6 +29,7 @@ const MENU_LAYER := 50
 
 var state: State = State.MENU
 
+var _state_before_loading: State = State.MENU
 var _gameplay_mouse_mode: Input.MouseMode = Input.MOUSE_MODE_VISIBLE
 var _layer: CanvasLayer
 var _dimmer: ColorRect
@@ -142,6 +147,21 @@ func pop_menu() -> void:
 		_dimmer.visible = false
 	else:
 		_open(_stack.back())
+
+
+## Called by SceneManager while it waits for a scene to load.
+func begin_loading() -> void:
+	if state == State.LOADING:
+		return
+	_state_before_loading = state
+	_set_state(State.LOADING)
+
+
+## Called by SceneManager when loading is done. Restores the earlier state,
+## unless something already declared a new one.
+func end_loading() -> void:
+	if state == State.LOADING:
+		_set_state(_state_before_loading)
 
 
 ## The settings menu, shared by the pause menu and (from #4) the main menu.

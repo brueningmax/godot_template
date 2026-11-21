@@ -5,9 +5,7 @@ extends Node
 ##   SignalBus.scene_change_finished.connect(_on_scene_change_finished)
 ##   SignalBus.pause_toggled.emit(true)
 ##
-## Never read SceneRegistry.SCENES from here (or from any script a registered
-## scene depends on): it preloads every scene, which creates a cyclic
-## reference. SceneRegistry.SceneKey is fine; keys below are ints for brevity.
+## Scene keys below are ints (SceneRegistry.SceneKey values) for brevity.
 
 # --- Scenes -----------------------------------------------------------------
 
