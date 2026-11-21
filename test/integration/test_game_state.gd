@@ -93,3 +93,25 @@ func test_gameplay_mouse_mode_is_remembered() -> void:
 	await press("pause")
 	await press("pause")
 	assert_eq(GameState._gameplay_mouse_mode, Input.MOUSE_MODE_CONFINED)
+
+
+# --- Quitting ---
+
+
+func test_window_close_goes_through_quit() -> void:
+	assert_false(get_tree().auto_accept_quit, "close request handled by GameState.quit()")
+	assert_false(GameState.is_quitting())
+
+
+func test_audio_stop_all_stops_playing_sounds() -> void:
+	Audio.play(&"ui.hover")
+	await wait_process_frames(1)
+	var playing := func() -> int:
+		var n := 0
+		for p in Audio.find_children("*", "AudioStreamPlayer", true, false):
+			if p.playing:
+				n += 1
+		return n
+	assert_gt(playing.call(), 0, "a sound is playing")
+	Audio.stop_all()
+	assert_eq(playing.call(), 0)

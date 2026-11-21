@@ -26,6 +26,8 @@ const SETTINGS_MENU_SCENE := preload("res://scenes/ui/menus/settings_menu/settin
 
 ## Below SceneManager's overlay (100), so scene fades cover open menus.
 const MENU_LAYER := 50
+## Longest quit() waits for the audio thread (see quit()).
+const QUIT_AUDIO_DRAIN_MAX_SEC := 0.25
 
 var state: State = State.MENU
 
@@ -36,6 +38,7 @@ var _dimmer: ColorRect
 var _stack: Array[Control] = []
 var _pause_menu: PauseMenu
 var _settings_menu: SettingsMenu
+var _quitting := false
 
 
 func _ready() -> void:
@@ -57,6 +60,9 @@ func _ready() -> void:
 
 	# Never let a paused tree or an open overlay leak into the next scene.
 	SignalBus.scene_change_started.connect(_on_scene_change_started)
+
+	# Closing the window goes through quit() too (see _notification()).
+	get_tree().auto_accept_quit = false
 
 
 # --- Public API ---------------------------------------------------------------
@@ -163,6 +169,43 @@ func begin_loading() -> void:
 func end_loading() -> void:
 	if state == State.LOADING:
 		_set_state(_state_before_loading)
+
+
+## Quits the game. Use this instead of get_tree().quit(): it stops all sounds
+## first and waits until the audio thread has mixed twice and a frame has
+## passed (at most QUIT_AUDIO_DRAIN_MAX_SEC). A stopped sound is released only
+## then; quitting earlier makes Godot report "resources still in use at exit"
+## (an ERROR, failing CI's log scans).
+func quit(exit_code := 0) -> void:
+	if _quitting:
+		return
+	_quitting = true
+	Log.info(&"GameState", "quitting")
+	Audio.stop_all()
+	await _wait_for_audio_mixes(2)
+	await get_tree().process_frame
+	get_tree().quit(exit_code)
+
+
+func _wait_for_audio_mixes(count: int) -> void:
+	var deadline := Time.get_ticks_msec() + int(QUIT_AUDIO_DRAIN_MAX_SEC * 1000)
+	var last := AudioServer.get_time_since_last_mix()
+	var mixes := 0
+	while mixes < count and Time.get_ticks_msec() < deadline:
+		await get_tree().process_frame
+		var now := AudioServer.get_time_since_last_mix()
+		if now < last:
+			mixes += 1
+		last = now
+
+
+func is_quitting() -> bool:
+	return _quitting
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		quit()
 
 
 ## The settings menu, shared by the pause menu and (from #4) the main menu.

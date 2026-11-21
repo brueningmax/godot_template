@@ -22,7 +22,7 @@ func _on_debug_pressed() -> void:
 
 
 func _on_quit_pressed() -> void:
-	get_tree().quit()
+	GameState.quit()
 
 
 func _on_options_pressed() -> void:

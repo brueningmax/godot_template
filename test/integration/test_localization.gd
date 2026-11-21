@@ -48,6 +48,8 @@ func test_every_settings_row_has_a_translation() -> void:
 	var de := TranslationServer.get_translation_object("de")
 	for row in SettingsMenu.ROWS:
 		var texts: Array = [row.label, row.tab]
+		if row.has("tooltip"):
+			texts.append(row.tooltip)
 		if row.get("options") is Array:
 			for option in row.options:
 				if not str(option[1]).is_valid_int():

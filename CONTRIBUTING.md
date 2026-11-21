@@ -30,7 +30,7 @@ Thanks for helping. This page covers the rules that keep the template consistent
 
 | Folder | What goes there |
 | --- | --- |
-| `globals/<system>/` | Autoloaded systems, one folder each (script, scenes, resources it owns), plus shared systems used as plain classes (`command_queue/`). |
+| `globals/<system>/` | Autoloaded systems, one folder each (script, scenes, resources it owns), plus shared systems used as plain classes (`command_queue/`, `state_machine/`) and node components (`game_feel/camera_shaker.gd`). |
 | `scenes/` | Everything that's instanced: `game/`, `ui/menus/`, `ui/components/`, `debug/`. One folder per scene, holding its `.tscn`, script and scene-local assets (sounds, textures). |
 | `resources/` | Shared `.tres` data, e.g. audio registries and the bus layout. |
 | `data/` | Game content as `Definition` resources, one folder per type (script + `.tres` files), loaded by the `Definitions` autoload. |
@@ -58,6 +58,7 @@ Code style is enforced by `gdformat` and `gdlint`. See [Code style](docs/TEMPLAT
 
 - **Start-up navigation lives in `boot.gd` only**, never in an autoload's `_ready()`. Autoloads also run when a single scene is started (F6), so it would hijack scene debugging.
 - **`GameState` owns pausing and the mouse mode.** Scenes call `GameState.enter_gameplay(...)` or `GameState.enter_menu()` in `_ready()`. Nothing else sets `get_tree().paused` or `Input.mouse_mode`.
+- **Quit through `GameState.quit()`**, never `get_tree().quit()`. It stops audio first, so Godot doesn't report leaked resources at exit.
 - **Change scenes through `SceneManager`**, never `get_tree().change_scene_to_*()`.
 - **Add new `SceneKey` values at the end** of the enum. Exported values are stored as numbers.
 - **Logging:** use `Log.debug/info/warn/error(&"Category", "…")` in game code, not `print()` or `push_*()`.

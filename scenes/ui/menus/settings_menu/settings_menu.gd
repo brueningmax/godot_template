@@ -18,7 +18,8 @@ extends MenuBase
 ##           menu returning that list (for lists only known at runtime)
 ##   BINDING section "input", key = an action in InputBindings.REBINDABLE:
 ##           a keyboard and a controller RebindButton
-## Any row: debug_only = true hides it in release builds.
+## Any row: debug_only = true hides it in release builds; tooltip = "…"
+## explains the setting (shown on mouse hover and on keyboard/controller focus).
 ##
 ## Controller: LB / RB (ui_tab_previous / ui_tab_next, also PageUp / PageDown)
 ## switch tabs; B goes back like Esc.
@@ -72,6 +73,7 @@ const ROWS := [
 		key = "window_mode",
 		label = "Window mode",
 		type = RowType.OPTION,
+		tooltip = "Fullscreen switches apps instantly. Exclusive fullscreen can lower input lag.",
 		options =
 		[
 			["windowed", "Windowed"],
@@ -87,13 +89,21 @@ const ROWS := [
 		type = RowType.OPTION,
 		options = "_resolution_options",
 	},
-	{tab = "Display", section = "display", key = "vsync", label = "VSync", type = RowType.TOGGLE},
+	{
+		tab = "Display",
+		section = "display",
+		key = "vsync",
+		label = "VSync",
+		type = RowType.TOGGLE,
+		tooltip = "Matches the frame rate to your monitor to avoid tearing.",
+	},
 	{
 		tab = "Display",
 		section = "display",
 		key = "max_fps",
 		label = "FPS cap",
 		type = RowType.OPTION,
+		tooltip = "Highest frame rate the game runs at. Lower values save power.",
 		options =
 		[[0, "Unlimited"], [30, "30"], [60, "60"], [120, "120"], [144, "144"], [240, "240"]],
 	},
@@ -104,10 +114,19 @@ const ROWS := [
 		key = "ui_scale",
 		label = "UI scale",
 		type = RowType.SLIDER,
+		tooltip = "Size of menus and text.",
 		min = 0.75,
 		max = 2.0,
 		step = 0.05,
 		format = "x",
+	},
+	{
+		tab = "Interface",
+		section = "interface",
+		key = "screen_shake",
+		label = "Screen shake",
+		type = RowType.SLIDER,
+		tooltip = "How strongly the screen shakes on hits. 0% turns it off.",
 	},
 	{
 		tab = "Interface",
@@ -279,6 +298,12 @@ func _build_row(row: Dictionary) -> void:
 			)
 			box.add_child(option)
 			control = option
+
+	var tooltip: String = row.get("tooltip", "")
+	if tooltip != "":
+		label.tooltip_text = tooltip
+		label.mouse_filter = Control.MOUSE_FILTER_PASS  # labels ignore the mouse otherwise
+		control.tooltip_text = tooltip
 
 	_tab_box(row.get("tab", "General")).add_child(box)
 	_controls[_id(row)] = control

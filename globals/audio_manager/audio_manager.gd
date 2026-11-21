@@ -92,6 +92,19 @@ func _ready() -> void:
 	_init_music_layers()
 
 
+## Stops every sound this manager plays: pooled voices, followers, music
+## layers and the stinger. GameState.quit() calls it before quitting.
+func stop_all() -> void:
+	var players: Array[Node] = find_children("*", "AudioStreamPlayer", true, false)
+	players.append_array(find_children("*", "AudioStreamPlayer3D", true, false))
+	for owner_id in _follow_players:
+		for player in _follow_players[owner_id].values():
+			if is_instance_valid(player):
+				players.append(player)
+	for player in players:
+		player.stop()
+
+
 ## Creates the dedicated player used for "stingers" (one-shots over music).
 ## Layers themselves are created lazily when first referenced.
 func _init_music_layers() -> void:

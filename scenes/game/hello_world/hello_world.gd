@@ -8,6 +8,7 @@ extends Node2D
 ## - Audio: footsteps by registry ID
 ## - GameState: declares itself gameplay, so Esc opens the pause menu
 ##   (also when run on its own with F6)
+## - GameFeel: a roll shakes the camera (CameraShaker) and pops the player
 
 const SPEED := 300.0
 const STEP_INTERVAL := 0.35
@@ -23,6 +24,7 @@ func _ready() -> void:
 	info.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED  # already translated
 	GameState.enter_gameplay(Input.MOUSE_MODE_VISIBLE)
 	player.position = get_viewport_rect().size / 2.0
+	_add_camera()
 	_update_info()
 
 
@@ -49,9 +51,24 @@ func _unhandled_input(event: InputEvent) -> void:
 func _roll() -> void:
 	# Same seed -> same sequence of rolls, because the "dice" stream is
 	# derived from the run seed and nothing else draws from it.
-	_last_roll = str(RngManager.get_stream("dice").rand_int(1, 6))
+	var roll := RngManager.get_stream("dice").rand_int(1, 6)
+	_last_roll = str(roll)
 	Audio.play(&"ui.click")
+	GameFeel.shake(0.15 + roll * 0.07)  # a six shakes harder than a one
+	GameFeel.flash(player)
+	GameFeel.punch(player, 0.3)
 	_update_info()
+
+
+# A camera centred on the screen, so the view looks the same as without one,
+# with a CameraShaker child so GameFeel.shake() has something to move.
+func _add_camera() -> void:
+	var camera := Camera2D.new()
+	camera.name = "Camera"
+	camera.position = get_viewport_rect().size / 2.0
+	camera.add_child(CameraShaker.new())
+	add_child(camera)
+	camera.make_current()
 
 
 func _notification(what: int) -> void:

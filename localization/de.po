@@ -102,6 +102,24 @@ msgstr "Sprache"
 msgid "System"
 msgstr "System"
 
+msgid "Matches the frame rate to your monitor to avoid tearing."
+msgstr "Passt die Bildrate an den Monitor an, um Bildrisse zu vermeiden."
+
+msgid "Fullscreen switches apps instantly. Exclusive fullscreen can lower input lag."
+msgstr "Vollbild wechselt sofort zwischen Programmen. Exklusives Vollbild kann die Eingabeverzögerung senken."
+
+msgid "Highest frame rate the game runs at. Lower values save power."
+msgstr "Höchste Bildrate des Spiels. Niedrigere Werte sparen Strom."
+
+msgid "Size of menus and text."
+msgstr "Größe von Menüs und Text."
+
+msgid "Screen shake"
+msgstr "Bildschirmwackeln"
+
+msgid "How strongly the screen shakes on hits. 0% turns it off."
+msgstr "Wie stark der Bildschirm bei Treffern wackelt. 0 % schaltet es aus."
+
 msgid "Controls"
 msgstr "Steuerung"
 

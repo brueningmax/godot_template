@@ -15,17 +15,19 @@ How the template's systems work, how to use them, and what isn't obvious from th
 7. [SaveManager](#savemanager)
 8. [Data definitions](#data-definitions)
 9. [Command queue](#command-queue)
-10. [RngManager](#rngmanager)
-11. [GameState and pausing](#gamestate-and-pausing)
-12. [SceneManager and SceneRegistry](#scenemanager-and-sceneregistry)
-13. [Audio](#audio)
-14. [Menus and UI](#menus-and-ui)
-15. [Localization](#localization)
-16. [Debug tools](#debug-tools)
-17. [Debugging in VS Code](#debugging-in-vs-code)
-18. [Testing](#testing)
-19. [CI and releases](#ci-and-releases)
-20. [Conventions](#conventions)
+10. [State machine](#state-machine)
+11. [Game feel](#game-feel)
+12. [RngManager](#rngmanager)
+13. [GameState and pausing](#gamestate-and-pausing)
+14. [SceneManager and SceneRegistry](#scenemanager-and-sceneregistry)
+15. [Audio](#audio)
+16. [Menus and UI](#menus-and-ui)
+17. [Localization](#localization)
+18. [Debug tools](#debug-tools)
+19. [Debugging in VS Code](#debugging-in-vs-code)
+20. [Testing](#testing)
+21. [CI and releases](#ci-and-releases)
+22. [Conventions](#conventions)
 
 ---
 
@@ -92,8 +94,11 @@ Autoloads are created in the order listed in **Project Settings → Globals → 
 6. `GameState`
 7. `SaveManager`: after `GameState`, whose state decides when play time counts.
 8. `Definitions`: loads and checks all data definitions (`res://data/`), so they're ready before any scene runs.
-9. `SceneManager`
-10. `Debug`: a **scene** (`globals/debug/debug.tscn`) so its options are editable in the inspector. Last, because it uses all the others.
+9. `Toasts`: notifications (layer 110).
+10. `Tooltips`: tooltips on keyboard/controller focus (layer 115).
+11. `GameFeel`: screen shake, hit-stop, flash and punch; reads the screen shake setting.
+12. `SceneManager`
+13. `Debug`: a **scene** (`globals/debug/debug.tscn`) so its options are editable in the inspector. Last, because it uses all the others.
 
 **Gotcha:** an autoload's name and its script's `class_name` must not be the same, or the global is ambiguous. That's why the scene manager's script is `class_name MainRoot` while the autoload is called `SceneManager`.
 
@@ -196,6 +201,7 @@ SettingsManager.set_setting("display", "vsync", false)
 | `display/max_fps` | `0` | int, 0 = no cap | `Engine.max_fps` |
 | `interface/ui_scale` | `1.0` | 0.5–3 (menu: 0.75–2) | `get_tree().root.content_scale_factor` |
 | `input/<action>` | *(absent)* | list of bindings, e.g. `["key:74", "joy_button:2"]` | `InputMap`, see [Controls and rebinding](#controls-and-rebinding) |
+| `interface/screen_shake` | `1.0` | 0–1, 0 = off | `GameFeel.shake_scale` (GameFeel listens to `setting_changed`) |
 | `interface/language` | `""` | `""` = system language, or a locale like `"de"` | `TranslationServer.set_locale()` |
 
 Non-obvious behaviour:
@@ -222,6 +228,7 @@ Non-obvious behaviour:
   - `SLIDER`: optional `min`, `max`, `step` (default 0–1 in steps of 0.05) and `format` (`"percent"`, the default, `"x"` for `1.25x`, or `"int"`).
   - `TOGGLE`: a switch for a bool.
   - `BINDING`: a keyboard and a controller [rebind button](#controls-and-rebinding) for the action in `key` (section `input`).
+  - Any row: `tooltip = "…"` explains the setting, on mouse hover and on keyboard/controller focus ([Tooltips](#tooltips-on-keyboard-and-controller-focus)). `debug_only = true` hides the row in release builds.
   - `OPTION`: a dropdown. `options` is a list of `[value, "Label"]` pairs, or the name of a method on the menu that returns one (used for window sizes and languages, which are only known at runtime). A saved value that isn't in the list, e.g. a window size edited into the file, is added to the list so it still shows.
 
 ### Adding a setting end to end
@@ -420,6 +427,86 @@ Good to know:
 - Commands are `RefCounted`, not nodes. To wait for something, await a signal of a node (`await tween.finished`, `await get_tree().create_timer(0.3).timeout` through `Engine.get_main_loop()`).
 - `execute()` runs to its first `await` immediately inside `run()`. Code after `queue.enqueue()` doesn't run "after" the command unless you `await queue.run()`.
 
+## State machine
+
+`globals/state_machine/`: `StateMachine` and `MachineState`, node classes (not an autoload) for anything that has states: a player (idle, walk, jump), an enemy's AI (patrol, chase, attack), a door, a UI flow.
+
+```
+Player (CharacterBody2D)
+  StateMachine        initial_state = Idle (empty = first child)
+    Idle   (script extends MachineState)
+    Walk
+    Jump
+```
+
+Each child `MachineState` is a state named after its node. Only the **current** state gets the per-frame calls. The machine forwards `_process`, `_physics_process` and `_unhandled_input` to it as `update()`, `physics_update()` and `handle_input()`:
+
+```gdscript
+# walk.gd
+extends MachineState
+
+func enter(previous: StringName, data: Dictionary) -> void:
+	target.play_animation(&"walk")      # target = the machine's parent (Player)
+
+func physics_update(delta: float) -> void:
+	var dir := Input.get_vector("left", "right", "up", "down")
+	if dir == Vector2.ZERO:
+		transition_to(&"Idle")
+	target.velocity = dir * target.speed
+	target.move_and_slide()
+
+func handle_input(event: InputEvent) -> void:
+	if event.is_action_pressed("jump"):
+		transition_to(&"Jump", {"from_run": true})   # data arrives in Jump.enter()
+```
+
+From outside: `$StateMachine.transition_to(&"Hurt", {"damage": 3})`, `is_in(&"Walk")`, `current_name()`, `previous_name()`, `history` (the last `history_limit` state names), and the signal `state_changed(from, to)`.
+
+Behaviour worth knowing:
+
+- **Order:** `exit(next)` on the old state, then `enter(previous, data)` on the new one, then `state_changed`. The initial state enters in the machine's `_ready()` with `previous = &""`.
+- **Transitions during a transition are queued.** If `enter()` or `exit()` calls `transition_to()`, that runs after the current transition has finished, so `enter()` / `exit()` calls never interleave. (A "Landed" state can go straight on to "Idle" from its `enter()`.)
+- Switching to the current state does nothing. Pass `reenter = true` to exit and enter it again (e.g. restarting an attack).
+- An unknown state name is a `Log.error` (fails tests), and the machine stays where it is.
+- **Pausing** follows the normal `process_mode` rules: the machine and its states freeze with the tree unless you change their mode.
+- The class is `MachineState`, not `State`, so it can't collide with an enum called `State` (as in `GameState.State`). A global class with that name would shadow such enums in every script.
+- **Debugging:** transitions are logged at `debug` level as `[State] Player/StateMachine: Idle -> Walk` (`-- --log=State:debug`), and the console command `states` lists every machine with its current and recent states.
+
+## Game feel
+
+Autoload `GameFeel` and the `CameraShaker` node (`globals/game_feel/`): small effects that make hits and actions feel solid.
+
+```gdscript
+GameFeel.shake(0.4)              # screen shake, trauma 0..1 (typical hits 0.2–0.6)
+GameFeel.hit_stop(0.06)          # freeze gameplay for 60 ms
+GameFeel.hit_stop(0.3, 0.2)      # or slow it to 20 % for 0.3 s
+GameFeel.flash($Sprite2D)        # flash white, fade back
+GameFeel.punch($Button, 0.2)     # pop the scale up 20 % and spring back
+```
+
+The hello-world scene uses all of them when you roll the dice (Space or A).
+
+### Screen shake
+
+Add a **`CameraShaker` node as a child of your `Camera2D` or `Camera3D`**. `GameFeel.shake()` reaches every shaker, or call `add_trauma()` on one directly.
+
+- **Trauma** (0–1) adds up from hits and decays (`decay`, 1.6 per second). The shake strength is trauma², so small hits barely move the camera and big ones clearly do. The motion comes from smooth noise, not random jumps.
+- It moves the camera's **offset** (2D: `offset` plus a small `rotation`; 3D: `h_offset` / `v_offset`), not its position, so it works with cameras that follow a target. Tune `max_offset`, `max_roll_degrees`, `decay` and `frequency` in the inspector.
+- **Accessibility:** `GameFeel.shake()` is scaled by the player's **Screen shake** setting (Interface tab, `interface/screen_shake`, 0 = off). Calling `add_trauma()` directly skips that, so prefer `shake()`.
+- It freezes while the game is paused, and runs on real time, so it keeps shaking during a hit-stop.
+
+### Hit-stop
+
+`hit_stop(duration, time_scale = 0.0)` sets `Engine.time_scale` for `duration` **real** seconds, then restores the scale from before, so a slow-motion scale set with the console's `timescale` command survives it. A hit-stop during another extends it, and it does nothing while the game is paused.
+
+Everything that uses game time stops with it: physics, animations, timers, tweens, and `delta` in `_process`. UI tweens that must keep running should use real time (`Tween.set_ignore_time_scale()`). Keep hit-stops short (30–100 ms). Long ones read as lag.
+
+### Flash and punch
+
+`flash(node, color, duration)` sets `modulate` to `color` and tweens it back to white. The default `Color(3, 3, 3)` is over-bright, so the sprite flashes white. `punch(node, amount, duration)` scales a `Node2D` or `Control` up and springs back, pivoting Controls around their centre. Both return their `Tween`, and both pause with their node.
+
+**Console:** `shake [trauma]` and `hitstop [seconds]` try the effects while tuning.
+
 ## RngManager
 
 `globals/rng_manager/rng_manager.gd` and `rng_stream.gd`. All gameplay randomness should come from here, so a run can be reproduced from its seed.
@@ -490,6 +577,8 @@ This works the same when the scene is run on its own (F6), because `GameState` i
 **Mouse mode:** the mode passed to `enter_gameplay()` is restored on every resume. Menus always get a visible cursor. Don't set `Input.mouse_mode` anywhere else, or the two will fight.
 
 `GameState.pause(show_menu := true)`: pass `false` to freeze gameplay without opening the pause menu. The debug console does this.
+
+**Quitting:** call `GameState.quit()`, never `get_tree().quit()`. It stops all sounds (`Audio.stop_all()`), waits until the audio thread has mixed twice and a frame has passed (at most 0.25 s), then quits. The audio thread only releases a stopped sound on its next mix. Quitting earlier makes Godot print `ERROR: 2 resources still in use at exit`, which fails CI's log scans. Closing the window goes through `quit()` as well: `GameState` turns off `auto_accept_quit` and handles the close request. The main menu's **Quit** and the console's `quit` use it.
 
 **Pause menu buttons:** Resume → `resume()`, Settings → the [settings menu](#settings-menu) (overlay), Restart → `SceneManager.reload_current()`, Quit → main menu. Starting any scene change also unpauses and closes overlays, so a paused tree never leaks into the next scene.
 
@@ -647,6 +736,28 @@ The player-rebindable actions are listed in `InputBindings.REBINDABLE` (`globals
 3. Add a row to `ROWS` in `settings_menu.gd`: `{tab = "Controls", section = "input", key = "dash", label = "Dash", type = RowType.BINDING}`, and add `"Dash"` to the `.po` files.
 
 `RebindButton` (`scenes/ui/components/rebind_button/`) also works on its own: set `action` and `device`, and `persist = true` to save immediately.
+
+### Toasts
+
+Autoload `Toasts` (`globals/toasts/`): short notifications in the bottom-right corner.
+
+```gdscript
+Toasts.show("Game saved", Toasts.Kind.SUCCESS)
+Toasts.show("Couldn't save", Toasts.Kind.ERROR, 4.0)   # seconds on screen (default 2.5)
+```
+
+- Kinds `INFO`, `SUCCESS`, `WARNING`, `ERROR` differ by the colour of the left edge.
+- They stack upwards. With more than `max_visible` (4), the oldest goes. They never take mouse input, and they keep fading while the game is paused.
+- `show()` returns the toast. `Toasts.dismiss(toast)` closes one early, and `Toasts.clear()` closes all.
+- **Text is translated by the label**, so pass the English text (`"Game saved"`, with an entry in the `.po` files). For text with values, translate first: `Toasts.show(tr("Saved to %s") % slot)`.
+- Layering: canvas layer 110, above menus (50) and scene fades (100), below tooltips (115) and the debug tools (120).
+- Nothing in the template shows toasts on its own. To announce saves, for example, connect `SignalBus.game_saved` to a function that calls `Toasts.show()`, and skip autosaves if they happen often.
+
+### Tooltips on keyboard and controller focus
+
+Godot shows `tooltip_text` only on **mouse hover**, so controller players never see it. Autoload `Tooltips` (`globals/tooltips/`) closes that gap: when a control gets focus from the keyboard or a controller, its `tooltip_text` appears below it (or above, if there's no room) after 0.4 s. It hides on the next focus change or as soon as the mouse moves. Mouse users keep Godot's own hover tooltip.
+
+Nothing to call: set `tooltip_text` as usual. In the settings menu, a row's `tooltip` field sets it on the row's label and control. Tooltip text is translated like other text, so add it to the `.po` files. `test_localization.gd` checks the settings rows' tooltips. Set `Tooltips.enabled = false` to turn the focus tooltips off.
 
 ## Localization
 
@@ -863,6 +974,7 @@ If you override `before_all()`, `after_all()` or `after_each()` in a `TemplateTe
 | `tools/check_scripts.gd` | a script doesn't compile |
 | Smoke run: full game | the boot → splash → main menu run logs an error |
 | Smoke run: `hello_world.tscn` | running that scene on its own logs an error |
+| Smoke run: quit while a sound plays | `tools/quit_check.gd` plays a sound and calls `GameState.quit()`; fails if Godot reports leaked resources at exit |
 | Tests (GUT) | any test fails |
 
 **Why the log scanning:** Godot exits with code 0 even when scenes or resources fail to load. The problems only appear as `ERROR:` lines in its output. `tools/check.sh` therefore scans the logs instead of trusting the exit code.

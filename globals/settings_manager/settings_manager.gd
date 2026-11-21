@@ -46,6 +46,7 @@ const DEFAULTS := {
 	{
 		"ui_scale": 1.0,
 		"language": "",  # "" = the system language
+		"screen_shake": 1.0,  # 0 = off; read by GameFeel
 	},
 	# Rebound actions only, {action: ["key:87", "joy_button:0"]}; see
 	# InputBindings. Actions not listed use Project Settings → Input Map.

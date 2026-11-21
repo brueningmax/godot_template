@@ -221,7 +221,7 @@ func _register_builtins() -> void:
 	register_command("log", _cmd_log, "Set a log category's level.", "<Category> <level>")
 	register_command("pause", func(_a): GameState.pause(), "Pause the game (pause menu).")
 	register_command("resume", func(_a): GameState.resume(), "Resume the game.")
-	register_command("quit", func(_a): get_tree().quit(), "Quit the game.")
+	register_command("quit", func(_a): GameState.quit(), "Quit the game.")
 
 
 func _cmd_help(args: PackedStringArray) -> String:
