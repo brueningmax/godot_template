@@ -48,4 +48,4 @@ text = "Settings"
 
 [node name="Quit" parent="MarginContainer/VBoxContainer/VBoxContainer" instance=ExtResource("2_1q8ye")]
 layout_mode = 2
-text = "Quit"
+text = "Quit to Menu"

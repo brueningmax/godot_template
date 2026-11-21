@@ -1,5 +1,5 @@
 extends Node
-## Global game state: MENU, PLAYING or PAUSED.
+## Global game state: MENU, PLAYING, PAUSED or LOADING.
 ##
 ## This is the ONLY place that sets get_tree().paused and Input.mouse_mode,
 ## and the only handler of the "pause" action. Scenes declare what they are
@@ -14,8 +14,12 @@ extends Node
 ##
 ## Menus shown over the game are kept on a small stack (push_menu/pop_menu),
 ## on a CanvasLayer below SceneManager's fade overlay.
+##
+## LOADING is set by SceneManager while it waits for a scene to load; pause
+## is ignored then. The state from before comes back when loading ends.
 
-enum State { MENU, PLAYING, PAUSED }
+## Add new states at the END (values may be stored as numbers).
+enum State { MENU, PLAYING, PAUSED, LOADING }
 
 const PAUSE_MENU_SCENE := preload("res://scenes/ui/menus/pause_menu/pause_menu.tscn")
 const SETTINGS_MENU_SCENE := preload("res://scenes/ui/menus/settings_menu/settings_menu.tscn")
@@ -25,6 +29,7 @@ const MENU_LAYER := 50
 
 var state: State = State.MENU
 
+var _state_before_loading: State = State.MENU
 var _gameplay_mouse_mode: Input.MouseMode = Input.MOUSE_MODE_VISIBLE
 var _layer: CanvasLayer
 var _dimmer: ColorRect
@@ -140,8 +145,24 @@ func pop_menu() -> void:
 	_close(_stack.pop_back())
 	if _stack.is_empty():
 		_dimmer.visible = false
+		_refocus_scene()
 	else:
 		_open(_stack.back())
+
+
+## Called by SceneManager while it waits for a scene to load.
+func begin_loading() -> void:
+	if state == State.LOADING:
+		return
+	_state_before_loading = state
+	_set_state(State.LOADING)
+
+
+## Called by SceneManager when loading is done. Restores the earlier state,
+## unless something already declared a new one.
+func end_loading() -> void:
+	if state == State.LOADING:
+		_set_state(_state_before_loading)
 
 
 ## The settings menu, shared by the pause menu and (from #4) the main menu.
@@ -213,6 +234,14 @@ func _clear_menus() -> void:
 	while not _stack.is_empty():
 		_close(_stack.pop_back())
 	_dimmer.visible = false
+
+
+# After the last overlay closes, give focus back to a menu scene underneath
+# (e.g. the main menu after Options), so controllers keep working.
+func _refocus_scene() -> void:
+	var scene: Node = SceneManager.current_scene
+	if scene is MenuBase and scene.is_visible_in_tree():
+		(scene as MenuBase).grab_default_focus.call_deferred()
 
 
 func _open(menu: Control) -> void:

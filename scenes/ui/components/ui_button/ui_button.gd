@@ -24,15 +24,28 @@ func _ready() -> void:
 
 	btn.mouse_entered.connect(_on_hover)
 	btn.mouse_exited.connect(_on_unhover)
-	btn.focus_entered.connect(_on_hover)
+	btn.focus_entered.connect(_on_focus)
 	btn.focus_exited.connect(_on_unhover)
 	btn.pressed.connect(_on_pressed)
 	btn.button_down.connect(_on_button_down)
 	btn.button_up.connect(_on_button_up)
 
 
+# Focus by keyboard/controller sounds like hover; automatic focus (a menu
+# opening, MenuBase.grab_default_focus()) only shows the lift.
+func _on_focus() -> void:
+	if btn.has_meta(&"silent_focus"):
+		_lift()
+	else:
+		_on_hover()
+
+
 func _on_hover() -> void:
 	Audio.play(&"ui.hover")
+	_lift()
+
+
+func _lift() -> void:
 	(
 		create_tween()
 		. tween_property(btn, "position:y", base_pos.y + hover_offset, anim_duration)

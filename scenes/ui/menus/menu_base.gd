@@ -30,12 +30,36 @@ func close() -> void:
 		_on_close()
 
 
+## Controller / keyboard users must never end up with nothing focused (e.g.
+## after a mouse click on empty space, or a submenu closing): the first
+## navigation press focuses default_focus again instead of doing nothing.
+func _input(event: InputEvent) -> void:
+	if not is_visible_in_tree() or default_focus == NodePath():
+		return
+	var nav := (
+		event.is_action_pressed("ui_up")
+		or event.is_action_pressed("ui_down")
+		or event.is_action_pressed("ui_left")
+		or event.is_action_pressed("ui_right")
+		or event.is_action_pressed("ui_accept")
+	)
+	if not nav:
+		return
+	var focus := get_viewport().gui_get_focus_owner()
+	if focus == null or not focus.is_visible_in_tree():
+		grab_default_focus()
+		get_viewport().set_input_as_handled()
+
+
 func grab_default_focus() -> void:
 	if default_focus == NodePath():
 		return
 	var target := _first_focusable(get_node_or_null(default_focus))
 	if target:
+		# Automatic focus isn't a player action: no hover sound (see UIButton).
+		target.set_meta(&"silent_focus", true)
 		target.grab_focus()
+		target.remove_meta(&"silent_focus")
 
 
 # default_focus may point at a wrapper (e.g. UIButton) that can't take focus

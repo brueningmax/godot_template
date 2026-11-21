@@ -1,0 +1,177 @@
+# Template UI strings. See docs/TEMPLATE_GUIDE.md -> "Localization".
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. Name of this language, in this language (shown in the language list).
+msgid "LANGUAGE_NAME"
+msgstr "English"
+
+msgid "Seed"
+msgstr ""
+
+msgid "random"
+msgstr ""
+
+msgid "Play"
+msgstr ""
+
+msgid "Debug"
+msgstr ""
+
+msgid "Options"
+msgstr ""
+
+msgid "Quit"
+msgstr ""
+
+msgid "Game Paused"
+msgstr ""
+
+msgid "Resume"
+msgstr ""
+
+msgid "Restart"
+msgstr ""
+
+msgid "Settings"
+msgstr ""
+
+msgid "Quit to Menu"
+msgstr ""
+
+msgid "Back"
+msgstr ""
+
+msgid "Apply"
+msgstr ""
+
+msgid "Audio"
+msgstr ""
+
+msgid "Display"
+msgstr ""
+
+msgid "Interface"
+msgstr ""
+
+msgid "Master"
+msgstr ""
+
+msgid "Music"
+msgstr ""
+
+msgid "Effects"
+msgstr ""
+
+msgid "Ambience"
+msgstr ""
+
+msgid "Window mode"
+msgstr ""
+
+msgid "Windowed"
+msgstr ""
+
+msgid "Fullscreen"
+msgstr ""
+
+msgid "Exclusive fullscreen"
+msgstr ""
+
+msgid "Window size"
+msgstr ""
+
+msgid "VSync"
+msgstr ""
+
+msgid "FPS cap"
+msgstr ""
+
+msgid "Unlimited"
+msgstr ""
+
+msgid "UI scale"
+msgstr ""
+
+msgid "Language"
+msgstr ""
+
+msgid "System"
+msgstr ""
+
+msgid "Controls"
+msgstr ""
+
+msgid "Move up"
+msgstr ""
+
+msgid "Move down"
+msgstr ""
+
+msgid "Move left"
+msgstr ""
+
+msgid "Move right"
+msgstr ""
+
+msgid "Jump"
+msgstr ""
+
+msgid "Pause"
+msgstr ""
+
+msgid "Debug overlay"
+msgstr ""
+
+msgid "Debug console"
+msgstr ""
+
+msgid "Reset controls"
+msgstr ""
+
+msgid "Press a key…"
+msgstr ""
+
+msgid "Press a button…"
+msgstr ""
+
+msgid "Loading…"
+msgstr ""
+
+msgid ""
+"Hello, world!\n"
+"Seed: %s\n"
+"Last roll: %s\n"
+"\n"
+"Move: WASD   Roll: Space   Pause: Esc"
+msgstr ""
+
+msgid "Project Scenes"
+msgstr ""
+
+msgid "Search scenes..."
+msgstr ""
+
+msgid "Launch with External Camera"
+msgstr ""
+
+msgid "Back to Menu"
+msgstr ""
+
+msgid "Scene Preview"
+msgstr ""
+
+msgid "Select a Scene to Preview"
+msgstr ""
+
+msgid "Launch Scene"
+msgstr ""
+
+msgid "Back to Library"
+msgstr ""
+
+msgid "Enable Camera Controls"
+msgstr ""

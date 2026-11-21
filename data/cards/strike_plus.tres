@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="CardDefinition" format=3]
+
+[ext_resource type="Script" path="res://data/cards/card_definition.gd" id="1_card"]
+
+[resource]
+script = ExtResource("1_card")
+id = &"strike_plus"
+tags = Array[StringName]([&"attack"])
+display_name = "Strike+"
+cost = 1
+upgrade = &""

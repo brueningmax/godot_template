@@ -1,0 +1,29 @@
+{
+	"data": {
+		"args": [
+			"s:coins",
+			"i:7",
+			"s:pos",
+			{
+				"args": [
+					3.0,
+					4.0
+				],
+				"type": "Vector2"
+			}
+		],
+		"type": "Dictionary"
+	},
+	"meta": {
+		"args": [
+			"s:saved_at",
+			"i:1700000000",
+			"s:playtime",
+			"f:12.5",
+			"s:chapter",
+			"i:1"
+		],
+		"type": "Dictionary"
+	},
+	"version": 1
+}

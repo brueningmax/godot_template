@@ -396,6 +396,9 @@ func _build_ui() -> void:
 	_layer = CanvasLayer.new()
 	_layer.name = "DebugLayer"
 	_layer.layer = LAYER
+	# Developer tools stay in English, and log text must never be looked up
+	# as a translation key.
+	_layer.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	add_child(_layer)
 
 	var font := SystemFont.new()

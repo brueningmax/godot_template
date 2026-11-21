@@ -30,9 +30,11 @@ Thanks for helping. This page covers the rules that keep the template consistent
 
 | Folder | What goes there |
 | --- | --- |
-| `globals/<system>/` | Autoloaded systems, one folder each (script, scenes, resources it owns). |
+| `globals/<system>/` | Autoloaded systems, one folder each (script, scenes, resources it owns), plus shared systems used as plain classes (`command_queue/`). |
 | `scenes/` | Everything that's instanced: `game/`, `ui/menus/`, `ui/components/`, `debug/`. One folder per scene, holding its `.tscn`, script and scene-local assets (sounds, textures). |
 | `resources/` | Shared `.tres` data, e.g. audio registries and the bus layout. |
+| `data/` | Game content as `Definition` resources, one folder per type (script + `.tres` files), loaded by the `Definitions` autoload. |
+| `localization/` | Translation files (`messages.pot`, one `.po` per language). |
 | `assets/` | Shared raw assets (audio, textures, fonts) used by several scenes. |
 | `test/` | `unit/`, `integration/` (automated, GUT), `sandbox/` (click-through scenes). |
 | `tools/` | Developer scripts (`check.sh`, `check_scripts.gd`, `rename_project.gd`). |
@@ -57,7 +59,6 @@ Code style is enforced by `gdformat` and `gdlint`. See [Code style](docs/TEMPLAT
 - **Start-up navigation lives in `boot.gd` only**, never in an autoload's `_ready()`. Autoloads also run when a single scene is started (F6), so it would hijack scene debugging.
 - **`GameState` owns pausing and the mouse mode.** Scenes call `GameState.enter_gameplay(...)` or `GameState.enter_menu()` in `_ready()`. Nothing else sets `get_tree().paused` or `Input.mouse_mode`.
 - **Change scenes through `SceneManager`**, never `get_tree().change_scene_to_*()`.
-- **Only `SceneManager` reads `SceneRegistry.SCENES`.** Reading it elsewhere creates a cyclic reference. `SceneRegistry.SceneKey` is fine anywhere.
 - **Add new `SceneKey` values at the end** of the enum. Exported values are stored as numbers.
 - **Logging:** use `Log.debug/info/warn/error(&"Category", "…")` in game code, not `print()` or `push_*()`.
 - **SignalBus:** typed signals only (`SignalBus.x.connect(...)`, `.emit(...)`), with a `##` doc comment.

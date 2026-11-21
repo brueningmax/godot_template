@@ -20,6 +20,7 @@ var _last_roll := "-"
 
 
 func _ready() -> void:
+	info.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED  # already translated
 	GameState.enter_gameplay(Input.MOUSE_MODE_VISIBLE)
 	player.position = get_viewport_rect().size / 2.0
 	_update_info()
@@ -53,11 +54,14 @@ func _roll() -> void:
 	_update_info()
 
 
+func _notification(what: int) -> void:
+	# Text built with tr() doesn't update by itself when the language changes.
+	if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready():
+		_update_info()
+
+
 func _update_info() -> void:
 	info.text = (
-		"Hello, world!\nSeed: %s\nLast roll: %s\n\nMove: WASD   Roll: Space   Pause: Esc"
-		% [
-			RngManager.get_seed(),
-			_last_roll,
-		]
+		tr("Hello, world!\nSeed: %s\nLast roll: %s\n\nMove: WASD   Roll: Space   Pause: Esc")
+		% [RngManager.get_seed(), _last_roll]
 	)

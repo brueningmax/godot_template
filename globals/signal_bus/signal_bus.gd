@@ -5,9 +5,7 @@ extends Node
 ##   SignalBus.scene_change_finished.connect(_on_scene_change_finished)
 ##   SignalBus.pause_toggled.emit(true)
 ##
-## Never read SceneRegistry.SCENES from here (or from any script a registered
-## scene depends on): it preloads every scene, which creates a cyclic
-## reference. SceneRegistry.SceneKey is fine; keys below are ints for brevity.
+## Scene keys below are ints (SceneRegistry.SceneKey values) for brevity.
 
 # --- Scenes -----------------------------------------------------------------
 
@@ -24,11 +22,19 @@ signal setting_changed(section: String, key: String, value: Variant)
 
 # --- Game state -------------------------------------------------------------
 
-## GameState changed. Both values are GameState.State (MENU, PLAYING, PAUSED).
+## GameState changed. Both values are GameState.State (MENU, PLAYING, PAUSED, LOADING).
 signal game_state_changed(new_state: int, old_state: int)
 
 ## The game was paused or resumed (emitted by GameState).
 signal pause_toggled(is_paused: bool)
+
+# --- Saves ------------------------------------------------------------------
+
+## SaveManager wrote `slot`.
+signal game_saved(slot: String)
+
+## SaveManager loaded `slot` (after migrating it).
+signal game_loaded(slot: String)
 
 # --- Game -------------------------------------------------------------------
 # Add your game's global signals here, e.g.:
