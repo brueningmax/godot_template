@@ -149,10 +149,13 @@ func test_max_fps_and_ui_scale_are_applied() -> void:
 
 
 func test_language_sets_locale() -> void:
+	# What the system locale becomes once Godot normalizes it (CI's "C" -> "en").
+	TranslationServer.set_locale(OS.get_locale())
+	var system := TranslationServer.get_locale()
 	SettingsManager.set_setting("interface", "language", "de", false)
 	assert_eq(TranslationServer.get_locale(), "de")
 	SettingsManager.set_setting("interface", "language", "", false)
-	assert_eq(TranslationServer.get_locale(), OS.get_locale(), "empty = system language")
+	assert_eq(TranslationServer.get_locale(), system, "empty = system language")
 
 
 func test_resolution_round_trips_as_vector2i() -> void:
