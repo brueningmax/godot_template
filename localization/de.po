@@ -102,6 +102,36 @@ msgstr "Sprache"
 msgid "System"
 msgstr "System"
 
+msgid "Controls"
+msgstr "Steuerung"
+
+msgid "Move up"
+msgstr "Nach oben"
+
+msgid "Move down"
+msgstr "Nach unten"
+
+msgid "Move left"
+msgstr "Nach links"
+
+msgid "Move right"
+msgstr "Nach rechts"
+
+msgid "Jump"
+msgstr "Springen"
+
+msgid "Pause"
+msgstr "Pause"
+
+msgid "Reset controls"
+msgstr "Steuerung zurücksetzen"
+
+msgid "Press a key…"
+msgstr "Taste drücken…"
+
+msgid "Press a button…"
+msgstr "Knopf drücken…"
+
 msgid "Loading…"
 msgstr "Lädt…"
 

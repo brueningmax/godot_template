@@ -192,6 +192,7 @@ SettingsManager.set_setting("display", "vsync", false)
 | `display/vsync` | `true` | bool | `DisplayServer.window_set_vsync_mode()` |
 | `display/max_fps` | `0` | int, 0 = no cap | `Engine.max_fps` |
 | `interface/ui_scale` | `1.0` | 0.5–3 (menu: 0.75–2) | `get_tree().root.content_scale_factor` |
+| `input/<action>` | *(absent)* | list of bindings, e.g. `["key:74", "joy_button:2"]` | `InputMap`, see [Controls and rebinding](#controls-and-rebinding) |
 | `interface/language` | `""` | `""` = system language, or a locale like `"de"` | `TranslationServer.set_locale()` |
 
 Non-obvious behaviour:
@@ -205,7 +206,7 @@ Non-obvious behaviour:
 - **`set_setting()` applies and saves immediately** by default, writing the whole file. Pass `persist = false` to apply without saving (`set_setting("audio", "music_volume", v, false)`), e.g. while a slider is dragged, and call `save_settings()` when you're done.
 - `snapshot()` returns a deep copy of every setting, and `restore(snapshot)` applies one again without saving. The settings menu uses these to revert.
 - It then emits `SignalBus.setting_changed(section, key, value)`.
-- The `audio`, `display` and `interface` sections are applied to the engine. Other sections are stored and saved, but you have to apply them yourself.
+- The `audio`, `display`, `interface` and `input` sections are applied to the engine. Other sections are stored and saved, but you have to apply them yourself.
 - Volumes are **linear 0–1**. They're converted to dB, and the bus is muted at ≤ 0.001. `VOLUME_BUSES` maps each key to its bus.
 
 ### Settings menu
@@ -217,6 +218,7 @@ Non-obvious behaviour:
 - **Row types:**
   - `SLIDER`: optional `min`, `max`, `step` (default 0–1 in steps of 0.05) and `format` (`"percent"`, the default, `"x"` for `1.25x`, or `"int"`).
   - `TOGGLE`: a switch for a bool.
+  - `BINDING`: a keyboard and a controller [rebind button](#controls-and-rebinding) for the action in `key` (section `input`).
   - `OPTION`: a dropdown. `options` is a list of `[value, "Label"]` pairs, or the name of a method on the menu that returns one (used for window sizes and languages, which are only known at runtime). A saved value that isn't in the list, e.g. a window size edited into the file, is added to the list so it still shows.
 
 ### Adding a setting end to end
@@ -479,7 +481,39 @@ Gotchas:
 
 Menu texts are English source text, translated automatically. See [Localization](#localization).
 
-> Planned: controller support in [#16](https://github.com/brueningmax/godot_template/issues/16).
+### Keyboard and controller navigation
+
+Every menu works without a mouse. Focus moves with the arrow keys, D-pad or left stick (`ui_up` / `ui_down` / `ui_left` / `ui_right`). **A** / Enter activates (`ui_accept`), and **B** / Esc goes back (`ui_cancel`, handled by `GameState`). **Start** pauses. In the settings menu, **LB / RB** (PageUp / PageDown, actions `ui_tab_previous` / `ui_tab_next`) switch tabs.
+
+Godot's built-in `ui_accept` and `ui_cancel` have no controller buttons, so `project.godot` overrides both to add A and B.
+
+How focus is kept:
+
+- `MenuBase.open()` focuses `default_focus`. The main menu is a `MenuBase` too and focuses **Play** when it appears.
+- When the last overlay menu closes (e.g. Back from Options), `GameState` gives focus back to the menu scene underneath.
+- **Lost focus is recovered:** if nothing visible has focus (e.g. after a mouse click on empty space), the first navigation or accept press focuses `default_focus` instead of doing nothing.
+- Switching settings tabs moves focus to the first control of the new tab.
+
+Each new menu gets all of this by extending `MenuBase` and setting `default_focus`. The debug scene library is mouse-oriented and not covered.
+
+### Controls and rebinding
+
+The player-rebindable actions are listed in `InputBindings.REBINDABLE` (`globals/settings_manager/input_bindings.gd`): `up`, `down`, `left`, `right`, `jump`, `pause`. Each has a **keyboard** and a **controller** binding, shown on the settings menu's **Controls** tab.
+
+- **Rebinding:** press a binding's button, then the new key, mouse button (not left), controller button or stick direction. Esc or a left click cancels. Like every setting it's a preview until **Apply**, and **Back** reverts it.
+- **Conflicts swap:** binding a key that another rebindable action uses gives that action the old key instead, so no action ends up unbound by accident.
+- **Reset controls** (on the tab) or `SettingsManager.reset_controls()` returns every action to Project Settings → Input Map.
+- **Storage:** only changed actions are saved, in the `input` section of `settings.cfg`, as readable text: `left=["key:74", "joy_axis:0:-"]` (physical key code, mouse button, controller button, or axis and direction). Actions without an entry use the Input Map, so changing a default in the project reaches every player who hasn't rebound that action.
+- **Keys are physical positions,** like the project's defaults: WASD stays in the same place on AZERTY or QWERTZ keyboards. The button shows the key's label on the player's layout.
+- Bindings ignore modifier keys (Shift, Ctrl), and controller bindings apply to every connected controller.
+
+**Adding a rebindable action:**
+
+1. Create the action in **Project Settings → Input Map** with a keyboard and a controller event.
+2. Add its name to `InputBindings.REBINDABLE`.
+3. Add a row to `ROWS` in `settings_menu.gd`: `{tab = "Controls", section = "input", key = "dash", label = "Dash", type = RowType.BINDING}`, and add `"Dash"` to the `.po` files.
+
+`RebindButton` (`scenes/ui/components/rebind_button/`) also works on its own: set `action` and `device`, and `persist = true` to save immediately.
 
 ## Localization
 

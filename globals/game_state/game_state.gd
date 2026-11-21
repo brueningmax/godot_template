@@ -145,6 +145,7 @@ func pop_menu() -> void:
 	_close(_stack.pop_back())
 	if _stack.is_empty():
 		_dimmer.visible = false
+		_refocus_scene()
 	else:
 		_open(_stack.back())
 
@@ -233,6 +234,14 @@ func _clear_menus() -> void:
 	while not _stack.is_empty():
 		_close(_stack.pop_back())
 	_dimmer.visible = false
+
+
+# After the last overlay closes, give focus back to a menu scene underneath
+# (e.g. the main menu after Options), so controllers keep working.
+func _refocus_scene() -> void:
+	var scene: Node = SceneManager.current_scene
+	if scene is MenuBase and scene.is_visible_in_tree():
+		(scene as MenuBase).grab_default_focus.call_deferred()
 
 
 func _open(menu: Control) -> void:

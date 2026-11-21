@@ -1,11 +1,14 @@
 class_name MainMenu
-extends Control
+extends MenuBase
 
+@onready var btn_play: UIButton = $MarginContainer/VBoxContainer/Play
 @onready var seed_input: LineEdit = $"MarginContainer/VBoxContainer/HBoxContainer/Seed Input"
 
 
 func _ready() -> void:
 	GameState.enter_menu()
+	default_focus = btn_play.get_path()
+	grab_default_focus.call_deferred()
 
 
 func _on_play_pressed() -> void:

@@ -47,6 +47,9 @@ const DEFAULTS := {
 		"ui_scale": 1.0,
 		"language": "",  # "" = the system language
 	},
+	# Rebound actions only, {action: ["key:87", "joy_button:0"]}; see
+	# InputBindings. Actions not listed use Project Settings → Input Map.
+	"input": {},
 }
 
 ## Where settings are saved. Tests point this at a temporary file.
@@ -98,11 +101,37 @@ func snapshot() -> Dictionary:
 
 
 ## Applies every value from a snapshot() (without saving) and emits
-## setting_changed for each, so UIs listening to the bus update too.
+## setting_changed for each, so UIs listening to the bus update too. Keys
+## added since the snapshot (e.g. a new key binding) are removed again.
 func restore(values: Dictionary) -> void:
+	for section in _settings.keys():
+		for key in _settings[section].keys():
+			if not (values.has(section) and values[section].has(key)):
+				_unset(section, key)
 	for section in values.keys():
 		for key in values[section].keys():
 			set_setting(section, key, values[section][key], false)
+
+
+## Puts every key binding back to Project Settings → Input Map.
+func reset_controls(persist := true) -> void:
+	for action in _settings.get("input", {}).keys():
+		_unset("input", action)
+	if persist:
+		save_settings()
+
+
+# Removes a stored key: input actions go back to the project's events, other
+# keys to their default (if they have one).
+func _unset(section: String, key: String) -> void:
+	_settings[section].erase(key)
+	if section == "input":
+		InputBindings.apply(key, null)
+		SignalBus.setting_changed.emit(section, key, null)
+		return
+	var fallback: Variant = defaults().get(section, {}).get(key)
+	if fallback != null:
+		set_setting(section, key, fallback, false)
 
 
 func get_setting(section: String, key: String, default: Variant = null) -> Variant:
@@ -178,6 +207,8 @@ func _apply_setting(section: String, key: String, value: Variant) -> void:
 			_apply_display(key, value)
 		"interface":
 			_apply_interface(key, value)
+		"input":
+			InputBindings.apply(key, value)
 
 
 func _apply_audio(key: String, value: Variant) -> void:

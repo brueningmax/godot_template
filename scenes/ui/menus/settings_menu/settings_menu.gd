@@ -16,11 +16,16 @@ extends MenuBase
 ##   TOGGLE  -
 ##   OPTION  options: [[value, "Label"], ...], or the name of a method of this
 ##           menu returning that list (for lists only known at runtime)
+##   BINDING section "input", key = an action in InputBindings.REBINDABLE:
+##           a keyboard and a controller RebindButton
+##
+## Controller: LB / RB (ui_tab_previous / ui_tab_next, also PageUp / PageDown)
+## switch tabs; B goes back like Esc.
 
 signal back_pressed
 signal apply_pressed
 
-enum RowType { SLIDER, TOGGLE, OPTION }
+enum RowType { SLIDER, TOGGLE, OPTION, BINDING }
 
 const ROWS := [
 	# Audio
@@ -111,6 +116,31 @@ const ROWS := [
 		type = RowType.OPTION,
 		options = "_language_options",
 	},
+	# Controls
+	{tab = "Controls", section = "input", key = "up", label = "Move up", type = RowType.BINDING},
+	{
+		tab = "Controls",
+		section = "input",
+		key = "down",
+		label = "Move down",
+		type = RowType.BINDING
+	},
+	{
+		tab = "Controls",
+		section = "input",
+		key = "left",
+		label = "Move left",
+		type = RowType.BINDING
+	},
+	{
+		tab = "Controls",
+		section = "input",
+		key = "right",
+		label = "Move right",
+		type = RowType.BINDING
+	},
+	{tab = "Controls", section = "input", key = "jump", label = "Jump", type = RowType.BINDING},
+	{tab = "Controls", section = "input", key = "pause", label = "Pause", type = RowType.BINDING},
 ]
 
 ## Window sizes offered in windowed mode (the current one is added if missing).
@@ -137,8 +167,11 @@ var _snapshot: Dictionary = {}
 func _ready() -> void:
 	for row in ROWS:
 		_build_row(row)
+	if _tab_boxes.has("Controls"):
+		_add_reset_controls_button(_tab_boxes["Controls"])
 	if not ROWS.is_empty():
 		default_focus = _controls[_id(ROWS[0])].get_path()
+	tabs.tab_changed.connect(_on_tab_changed)
 	btn_back.pressed.connect(cancel)
 	btn_apply.pressed.connect(apply)
 
@@ -204,6 +237,21 @@ func _build_row(row: Dictionary) -> void:
 			)
 			box.add_child(toggle)
 			control = toggle
+		RowType.BINDING:
+			var keyboard := RebindButton.new()
+			keyboard.action = row.key
+			keyboard.device = InputBindings.Device.KEYBOARD
+			keyboard.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			var gamepad := RebindButton.new()
+			gamepad.action = row.key
+			gamepad.device = InputBindings.Device.GAMEPAD
+			gamepad.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			# A swap changes another row too, so refresh them all.
+			keyboard.rebound.connect(func(_a, _e): _refresh())
+			gamepad.rebound.connect(func(_a, _e): _refresh())
+			box.add_child(keyboard)
+			box.add_child(gamepad)
+			control = keyboard
 		RowType.OPTION:
 			var option := OptionButton.new()
 			option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -247,6 +295,10 @@ func _refresh() -> void:
 				(control as BaseButton).set_pressed_no_signal(bool(value))
 			RowType.OPTION:
 				_fill_options(row, control as OptionButton, value)
+			RowType.BINDING:
+				for button in control.get_parent().get_children():
+					if button is RebindButton:
+						button.refresh()
 
 
 # (Re)builds an OptionButton's items and selects `value`. A value that isn't
@@ -263,6 +315,44 @@ func _fill_options(row: Dictionary, option: OptionButton, value: Variant) -> voi
 		option.add_item(str(value))
 	_option_values[_id(row)] = values
 	option.select(values.find(value))
+
+
+func _add_reset_controls_button(box: VBoxContainer) -> void:
+	var reset := Button.new()
+	reset.name = "ResetControls"
+	reset.text = "Reset controls"
+	reset.size_flags_horizontal = Control.SIZE_SHRINK_END
+	reset.pressed.connect(
+		func():
+			SettingsManager.reset_controls(false)
+			_refresh()
+	)
+	box.add_child(reset)
+
+
+# --- Tabs and focus ----------------------------------------------------------
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not is_visible_in_tree():
+		return
+	var step := 0
+	if event.is_action_pressed("ui_tab_previous"):
+		step = -1
+	elif event.is_action_pressed("ui_tab_next"):
+		step = 1
+	if step != 0:
+		tabs.current_tab = wrapi(tabs.current_tab + step, 0, tabs.get_tab_count())
+		get_viewport().set_input_as_handled()
+
+
+# Keep keyboard / controller focus inside the visible tab.
+func _on_tab_changed(_tab: int) -> void:
+	if not is_visible_in_tree() or get_viewport().gui_get_focus_owner() is TabBar:
+		return  # someone is browsing the tab bar itself
+	var first := _first_focusable(tabs.get_current_tab_control())
+	if first:
+		first.grab_focus()
 
 
 func _format(row: Dictionary, value: float) -> String:

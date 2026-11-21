@@ -101,6 +101,36 @@ msgstr ""
 msgid "System"
 msgstr ""
 
+msgid "Controls"
+msgstr ""
+
+msgid "Move up"
+msgstr ""
+
+msgid "Move down"
+msgstr ""
+
+msgid "Move left"
+msgstr ""
+
+msgid "Move right"
+msgstr ""
+
+msgid "Jump"
+msgstr ""
+
+msgid "Pause"
+msgstr ""
+
+msgid "Reset controls"
+msgstr ""
+
+msgid "Press a key…"
+msgstr ""
+
+msgid "Press a button…"
+msgstr ""
+
 msgid "Loading…"
 msgstr ""
 
