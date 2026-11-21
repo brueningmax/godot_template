@@ -114,6 +114,12 @@ msgstr "Höchste Bildrate des Spiels. Niedrigere Werte sparen Strom."
 msgid "Size of menus and text."
 msgstr "Größe von Menüs und Text."
 
+msgid "Screen shake"
+msgstr "Bildschirmwackeln"
+
+msgid "How strongly the screen shakes on hits. 0% turns it off."
+msgstr "Wie stark der Bildschirm bei Treffern wackelt. 0 % schaltet es aus."
+
 msgid "Controls"
 msgstr "Steuerung"
 

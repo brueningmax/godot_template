@@ -113,6 +113,12 @@ msgstr ""
 msgid "Size of menus and text."
 msgstr ""
 
+msgid "Screen shake"
+msgstr ""
+
+msgid "How strongly the screen shakes on hits. 0% turns it off."
+msgstr ""
+
 msgid "Controls"
 msgstr ""
 

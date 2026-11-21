@@ -123,6 +123,14 @@ const ROWS := [
 	{
 		tab = "Interface",
 		section = "interface",
+		key = "screen_shake",
+		label = "Screen shake",
+		type = RowType.SLIDER,
+		tooltip = "How strongly the screen shakes on hits. 0% turns it off.",
+	},
+	{
+		tab = "Interface",
+		section = "interface",
 		key = "language",
 		label = "Language",
 		type = RowType.OPTION,

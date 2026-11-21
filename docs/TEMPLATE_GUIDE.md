@@ -16,17 +16,18 @@ How the template's systems work, how to use them, and what isn't obvious from th
 8. [Data definitions](#data-definitions)
 9. [Command queue](#command-queue)
 10. [State machine](#state-machine)
-11. [RngManager](#rngmanager)
-12. [GameState and pausing](#gamestate-and-pausing)
-13. [SceneManager and SceneRegistry](#scenemanager-and-sceneregistry)
-14. [Audio](#audio)
-15. [Menus and UI](#menus-and-ui)
-16. [Localization](#localization)
-17. [Debug tools](#debug-tools)
-18. [Debugging in VS Code](#debugging-in-vs-code)
-19. [Testing](#testing)
-20. [CI and releases](#ci-and-releases)
-21. [Conventions](#conventions)
+11. [Game feel](#game-feel)
+12. [RngManager](#rngmanager)
+13. [GameState and pausing](#gamestate-and-pausing)
+14. [SceneManager and SceneRegistry](#scenemanager-and-sceneregistry)
+15. [Audio](#audio)
+16. [Menus and UI](#menus-and-ui)
+17. [Localization](#localization)
+18. [Debug tools](#debug-tools)
+19. [Debugging in VS Code](#debugging-in-vs-code)
+20. [Testing](#testing)
+21. [CI and releases](#ci-and-releases)
+22. [Conventions](#conventions)
 
 ---
 
@@ -95,8 +96,9 @@ Autoloads are created in the order listed in **Project Settings → Globals → 
 8. `Definitions`: loads and checks all data definitions (`res://data/`), so they're ready before any scene runs.
 9. `Toasts`: notifications (layer 110).
 10. `Tooltips`: tooltips on keyboard/controller focus (layer 115).
-11. `SceneManager`
-12. `Debug`: a **scene** (`globals/debug/debug.tscn`) so its options are editable in the inspector. Last, because it uses all the others.
+11. `GameFeel`: screen shake, hit-stop, flash and punch; reads the screen shake setting.
+12. `SceneManager`
+13. `Debug`: a **scene** (`globals/debug/debug.tscn`) so its options are editable in the inspector. Last, because it uses all the others.
 
 **Gotcha:** an autoload's name and its script's `class_name` must not be the same, or the global is ambiguous. That's why the scene manager's script is `class_name MainRoot` while the autoload is called `SceneManager`.
 
@@ -199,6 +201,7 @@ SettingsManager.set_setting("display", "vsync", false)
 | `display/max_fps` | `0` | int, 0 = no cap | `Engine.max_fps` |
 | `interface/ui_scale` | `1.0` | 0.5–3 (menu: 0.75–2) | `get_tree().root.content_scale_factor` |
 | `input/<action>` | *(absent)* | list of bindings, e.g. `["key:74", "joy_button:2"]` | `InputMap`, see [Controls and rebinding](#controls-and-rebinding) |
+| `interface/screen_shake` | `1.0` | 0–1, 0 = off | `GameFeel.shake_scale` (GameFeel listens to `setting_changed`) |
 | `interface/language` | `""` | `""` = system language, or a locale like `"de"` | `TranslationServer.set_locale()` |
 
 Non-obvious behaviour:
@@ -468,6 +471,41 @@ Behaviour worth knowing:
 - **Pausing** follows the normal `process_mode` rules: the machine and its states freeze with the tree unless you change their mode.
 - The class is `MachineState`, not `State`, so it can't collide with an enum called `State` (as in `GameState.State`). A global class with that name would shadow such enums in every script.
 - **Debugging:** transitions are logged at `debug` level as `[State] Player/StateMachine: Idle -> Walk` (`-- --log=State:debug`), and the console command `states` lists every machine with its current and recent states.
+
+## Game feel
+
+Autoload `GameFeel` and the `CameraShaker` node (`globals/game_feel/`): small effects that make hits and actions feel solid.
+
+```gdscript
+GameFeel.shake(0.4)              # screen shake, trauma 0..1 (typical hits 0.2–0.6)
+GameFeel.hit_stop(0.06)          # freeze gameplay for 60 ms
+GameFeel.hit_stop(0.3, 0.2)      # or slow it to 20 % for 0.3 s
+GameFeel.flash($Sprite2D)        # flash white, fade back
+GameFeel.punch($Button, 0.2)     # pop the scale up 20 % and spring back
+```
+
+The hello-world scene uses all of them when you roll the dice (Space or A).
+
+### Screen shake
+
+Add a **`CameraShaker` node as a child of your `Camera2D` or `Camera3D`**. `GameFeel.shake()` reaches every shaker, or call `add_trauma()` on one directly.
+
+- **Trauma** (0–1) adds up from hits and decays (`decay`, 1.6 per second). The shake strength is trauma², so small hits barely move the camera and big ones clearly do. The motion comes from smooth noise, not random jumps.
+- It moves the camera's **offset** (2D: `offset` plus a small `rotation`; 3D: `h_offset` / `v_offset`), not its position, so it works with cameras that follow a target. Tune `max_offset`, `max_roll_degrees`, `decay` and `frequency` in the inspector.
+- **Accessibility:** `GameFeel.shake()` is scaled by the player's **Screen shake** setting (Interface tab, `interface/screen_shake`, 0 = off). Calling `add_trauma()` directly skips that, so prefer `shake()`.
+- It freezes while the game is paused, and runs on real time, so it keeps shaking during a hit-stop.
+
+### Hit-stop
+
+`hit_stop(duration, time_scale = 0.0)` sets `Engine.time_scale` for `duration` **real** seconds, then restores the scale from before, so a slow-motion scale set with the console's `timescale` command survives it. A hit-stop during another extends it, and it does nothing while the game is paused.
+
+Everything that uses game time stops with it: physics, animations, timers, tweens, and `delta` in `_process`. UI tweens that must keep running should use real time (`Tween.set_ignore_time_scale()`). Keep hit-stops short (30–100 ms). Long ones read as lag.
+
+### Flash and punch
+
+`flash(node, color, duration)` sets `modulate` to `color` and tweens it back to white. The default `Color(3, 3, 3)` is over-bright, so the sprite flashes white. `punch(node, amount, duration)` scales a `Node2D` or `Control` up and springs back, pivoting Controls around their centre. Both return their `Tween`, and both pause with their node.
+
+**Console:** `shake [trauma]` and `hitstop [seconds]` try the effects while tuning.
 
 ## RngManager
 
