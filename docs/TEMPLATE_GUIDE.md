@@ -491,6 +491,8 @@ This works the same when the scene is run on its own (F6), because `GameState` i
 
 `GameState.pause(show_menu := true)`: pass `false` to freeze gameplay without opening the pause menu. The debug console does this.
 
+**Quitting:** call `GameState.quit()`, never `get_tree().quit()`. It stops all sounds (`Audio.stop_all()`), waits until the audio thread has mixed twice and a frame has passed (at most 0.25 s), then quits. The audio thread only releases a stopped sound on its next mix. Quitting earlier makes Godot print `ERROR: 2 resources still in use at exit`, which fails CI's log scans. Closing the window goes through `quit()` as well: `GameState` turns off `auto_accept_quit` and handles the close request. The main menu's **Quit** and the console's `quit` use it.
+
 **Pause menu buttons:** Resume → `resume()`, Settings → the [settings menu](#settings-menu) (overlay), Restart → `SceneManager.reload_current()`, Quit → main menu. Starting any scene change also unpauses and closes overlays, so a paused tree never leaks into the next scene.
 
 **Overlay menus:** `GameState.push_menu(menu)` / `pop_menu()` show menus over the current scene on a `CanvasLayer` (layer 50, below the scene fade). They show a dimmer and handle back navigation. Menus are reused: popping hides a menu rather than freeing it. `GameState.open_settings()` opens the shared settings menu.
@@ -863,6 +865,7 @@ If you override `before_all()`, `after_all()` or `after_each()` in a `TemplateTe
 | `tools/check_scripts.gd` | a script doesn't compile |
 | Smoke run: full game | the boot → splash → main menu run logs an error |
 | Smoke run: `hello_world.tscn` | running that scene on its own logs an error |
+| Smoke run: quit while a sound plays | `tools/quit_check.gd` plays a sound and calls `GameState.quit()`; fails if Godot reports leaked resources at exit |
 | Tests (GUT) | any test fails |
 
 **Why the log scanning:** Godot exits with code 0 even when scenes or resources fail to load. The problems only appear as `ERROR:` lines in its output. `tools/check.sh` therefore scans the logs instead of trusting the exit code.

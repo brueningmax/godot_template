@@ -72,6 +72,8 @@ var hum := Audio.play_follow(&"amb.machine_hum", self)
 
 Follow emitters are attached to the owner node and aren't pooled, because they map 1:1 to world objects.
 
+`Audio.stop_all()` stops every sound at once (pooled voices, followers, music layers, stinger). `GameState.quit()` calls it before quitting, because a sound still playing at exit makes Godot report leaked resources.
+
 ## Playing a resource directly (scene-local sounds)
 
 Sounds that belong to one scene don't need a registry. Keep the files in the scene's folder and pass the resource:

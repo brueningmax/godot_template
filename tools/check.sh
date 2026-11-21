@@ -91,6 +91,11 @@ godot_run smoke_hello_world 60 --fixed-fps 60 --quit-after 120 res://scenes/game
 scan_log "$LOG" "Smoke run of hello_world.tscn"
 echo "ok"
 
+step "Smoke run: quit while a sound plays (tools/quit_check.gd)"
+godot_run quit_check 60 --script res://tools/quit_check.gd
+scan_log "$LOG" "Quitting through GameState.quit()"
+echo "ok"
+
 step "Tests (GUT)"
 junit="$PWD/$LOG_DIR/junit.xml"
 limit 600 "$GODOT" --headless --path . -s res://addons/gut/gut_cmdln.gd -gjunit_xml_file="$junit" \
