@@ -102,6 +102,18 @@ msgstr ""
 msgid "System"
 msgstr ""
 
+msgid "Matches the frame rate to your monitor to avoid tearing."
+msgstr ""
+
+msgid "Fullscreen switches apps instantly. Exclusive fullscreen can lower input lag."
+msgstr ""
+
+msgid "Highest frame rate the game runs at. Lower values save power."
+msgstr ""
+
+msgid "Size of menus and text."
+msgstr ""
+
 msgid "Controls"
 msgstr ""
 

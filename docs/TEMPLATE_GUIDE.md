@@ -93,8 +93,10 @@ Autoloads are created in the order listed in **Project Settings → Globals → 
 6. `GameState`
 7. `SaveManager`: after `GameState`, whose state decides when play time counts.
 8. `Definitions`: loads and checks all data definitions (`res://data/`), so they're ready before any scene runs.
-9. `SceneManager`
-10. `Debug`: a **scene** (`globals/debug/debug.tscn`) so its options are editable in the inspector. Last, because it uses all the others.
+9. `Toasts`: notifications (layer 110).
+10. `Tooltips`: tooltips on keyboard/controller focus (layer 115).
+11. `SceneManager`
+12. `Debug`: a **scene** (`globals/debug/debug.tscn`) so its options are editable in the inspector. Last, because it uses all the others.
 
 **Gotcha:** an autoload's name and its script's `class_name` must not be the same, or the global is ambiguous. That's why the scene manager's script is `class_name MainRoot` while the autoload is called `SceneManager`.
 
@@ -223,6 +225,7 @@ Non-obvious behaviour:
   - `SLIDER`: optional `min`, `max`, `step` (default 0–1 in steps of 0.05) and `format` (`"percent"`, the default, `"x"` for `1.25x`, or `"int"`).
   - `TOGGLE`: a switch for a bool.
   - `BINDING`: a keyboard and a controller [rebind button](#controls-and-rebinding) for the action in `key` (section `input`).
+  - Any row: `tooltip = "…"` explains the setting, on mouse hover and on keyboard/controller focus ([Tooltips](#tooltips-on-keyboard-and-controller-focus)). `debug_only = true` hides the row in release builds.
   - `OPTION`: a dropdown. `options` is a list of `[value, "Label"]` pairs, or the name of a method on the menu that returns one (used for window sizes and languages, which are only known at runtime). A saved value that isn't in the list, e.g. a window size edited into the file, is added to the list so it still shows.
 
 ### Adding a setting end to end
@@ -695,6 +698,28 @@ The player-rebindable actions are listed in `InputBindings.REBINDABLE` (`globals
 3. Add a row to `ROWS` in `settings_menu.gd`: `{tab = "Controls", section = "input", key = "dash", label = "Dash", type = RowType.BINDING}`, and add `"Dash"` to the `.po` files.
 
 `RebindButton` (`scenes/ui/components/rebind_button/`) also works on its own: set `action` and `device`, and `persist = true` to save immediately.
+
+### Toasts
+
+Autoload `Toasts` (`globals/toasts/`): short notifications in the bottom-right corner.
+
+```gdscript
+Toasts.show("Game saved", Toasts.Kind.SUCCESS)
+Toasts.show("Couldn't save", Toasts.Kind.ERROR, 4.0)   # seconds on screen (default 2.5)
+```
+
+- Kinds `INFO`, `SUCCESS`, `WARNING`, `ERROR` differ by the colour of the left edge.
+- They stack upwards. With more than `max_visible` (4), the oldest goes. They never take mouse input, and they keep fading while the game is paused.
+- `show()` returns the toast. `Toasts.dismiss(toast)` closes one early, and `Toasts.clear()` closes all.
+- **Text is translated by the label**, so pass the English text (`"Game saved"`, with an entry in the `.po` files). For text with values, translate first: `Toasts.show(tr("Saved to %s") % slot)`.
+- Layering: canvas layer 110, above menus (50) and scene fades (100), below tooltips (115) and the debug tools (120).
+- Nothing in the template shows toasts on its own. To announce saves, for example, connect `SignalBus.game_saved` to a function that calls `Toasts.show()`, and skip autosaves if they happen often.
+
+### Tooltips on keyboard and controller focus
+
+Godot shows `tooltip_text` only on **mouse hover**, so controller players never see it. Autoload `Tooltips` (`globals/tooltips/`) closes that gap: when a control gets focus from the keyboard or a controller, its `tooltip_text` appears below it (or above, if there's no room) after 0.4 s. It hides on the next focus change or as soon as the mouse moves. Mouse users keep Godot's own hover tooltip.
+
+Nothing to call: set `tooltip_text` as usual. In the settings menu, a row's `tooltip` field sets it on the row's label and control. Tooltip text is translated like other text, so add it to the `.po` files. `test_localization.gd` checks the settings rows' tooltips. Set `Tooltips.enabled = false` to turn the focus tooltips off.
 
 ## Localization
 
