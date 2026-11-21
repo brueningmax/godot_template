@@ -12,16 +12,17 @@ How the template's systems work, how to use them, and what isn't obvious from th
 4. [Logging](#logging)
 5. [SignalBus](#signalbus)
 6. [SettingsManager](#settingsmanager)
-7. [RngManager](#rngmanager)
-8. [GameState and pausing](#gamestate-and-pausing)
-9. [SceneManager and SceneRegistry](#scenemanager-and-sceneregistry)
-10. [Audio](#audio)
-11. [Menus and UI](#menus-and-ui)
-12. [Debug tools](#debug-tools)
-13. [Debugging in VS Code](#debugging-in-vs-code)
-14. [Testing](#testing)
-15. [CI and releases](#ci-and-releases)
-16. [Conventions](#conventions)
+7. [SaveManager](#savemanager)
+8. [RngManager](#rngmanager)
+9. [GameState and pausing](#gamestate-and-pausing)
+10. [SceneManager and SceneRegistry](#scenemanager-and-sceneregistry)
+11. [Audio](#audio)
+12. [Menus and UI](#menus-and-ui)
+13. [Debug tools](#debug-tools)
+14. [Debugging in VS Code](#debugging-in-vs-code)
+15. [Testing](#testing)
+16. [CI and releases](#ci-and-releases)
+17. [Conventions](#conventions)
 
 ---
 
@@ -86,8 +87,9 @@ Autoloads are created in the order listed in **Project Settings → Globals → 
 4. `Audio`: a **scene** (`audio_manager_node.tscn`), not a script, so its registries can be assigned in the inspector.
 5. `SettingsManager`: loads `user://settings.cfg` and applies volumes, so it must come after the audio bus layout is active (always true) and after `SignalBus`.
 6. `GameState`
-7. `SceneManager`
-8. `Debug`: a **scene** (`globals/debug/debug.tscn`) so its options are editable in the inspector. Last, because it uses all the others.
+7. `SaveManager`: after `GameState`, whose state decides when play time counts.
+8. `SceneManager`
+9. `Debug`: a **scene** (`globals/debug/debug.tscn`) so its options are editable in the inspector. Last, because it uses all the others.
 
 **Gotcha:** an autoload's name and its script's `class_name` must not be the same, or the global is ambiguous. That's why the scene manager's script is `class_name MainRoot` while the autoload is called `SceneManager`.
 
@@ -157,6 +159,8 @@ Always use this typed form, never `connect("name", ...)` or `emit_signal("name")
 | `setting_changed` | `SettingsManager.set_setting()` | `section, key, value` |
 | `game_state_changed` | `GameState` | `new_state, old_state: int` (`GameState.State`) |
 | `pause_toggled` | `GameState.pause()` / `resume()` | `is_paused: bool` |
+| `game_saved` | `SaveManager.save_game()` | `slot: String` |
+| `game_loaded` | `SaveManager.load_game()` | `slot: String` |
 
 **Bus or direct signal?** Use the bus when the emitter shouldn't know who listens and the listeners are unrelated: HUD, audio and achievements reacting to the same event, or anything global. Use a normal signal for parent/child communication, e.g. a button telling its menu it was pressed. Passing everything through the bus makes data flow hard to follow.
 
@@ -198,6 +202,66 @@ Non-obvious behaviour:
 3. **Menu:** add one entry to `ROWS` in `settings_menu.gd`: `{section = "display", key = "max_fps", label = "FPS cap", type = RowType.SLIDER}`. Sliders currently cover 0–1. A different range or a dropdown needs a new `RowType`.
 
 > Planned: more settings (window mode, resolution, UI scale, language, FPS cap) in [#17](https://github.com/brueningmax/godot_template/issues/17).
+
+## SaveManager
+
+`globals/save_manager/save_manager.gd`, autoload `SaveManager`. Saves **game state** in slots under `user://saves/`. Player preferences belong in [SettingsManager](#settingsmanager), not here.
+
+```gdscript
+SaveManager.save_game("slot_1", {"gold": gold, "level": level}, {"chapter": 2})
+var data := SaveManager.load_game("slot_1")     # {} if missing or unreadable
+for info in SaveManager.list_saves():            # newest first
+	print(info.slot, info.saved_at, info.playtime, info.get("chapter"))
+SaveManager.delete_save("slot_1")
+```
+
+**What gets saved** is up to you, in one of two ways:
+
+- **Explicit dictionary:** build a `Dictionary` and pass it to `save_game()`. This is the clearest approach for most games: one place decides what a save contains.
+- **The `persist` group:** add nodes to the group `persist` and give them `save_state() -> Dictionary` and `load_state(state: Dictionary)`. `save_persist(slot)` collects every node's state, and `load_persist(slot)` hands it back. Nodes are matched by their `persist_id` property if they have one, otherwise by their node path. Give nodes a `persist_id` if their path can change. Only nodes that exist when you load are restored. Spawned objects (dropped items, enemies) need an explicit list in some parent's state.
+
+**Slots** are names made of letters, digits, `_` and `-` (`slot_1`, `autosave`), so they're safe as file names. `list_saves()` / `get_save_info(slot)` return each slot's metadata: `slot`, `version`, `saved_at` (Unix seconds), `playtime` (seconds), plus whatever you passed as `meta`. Keep `meta` small, since a slot list reads it for every save.
+
+**Play time:** `SaveManager.playtime` counts seconds while `GameState` is `PLAYING`, so menus and pauses don't count. It's written into every save and restored by `load_game()`.
+
+**Autosave:** `SaveManager.autosave()` saves the persist group to the `autosave` slot. Call it at checkpoints, or set `SaveManager.autosave_interval` (seconds, 0 = off) for a timer that runs only while playing.
+
+**Writes are atomic:** the file is written as `<slot>.save.tmp` and then renamed over `<slot>.save`. A crash or power loss mid-write leaves the previous save intact, and a leftover `.tmp` is ignored.
+
+### Versions and migrations
+
+Every save stores the format `version` it was written with (`SAVE_VERSION`, currently 1). When you change what a save contains in a way old saves don't match:
+
+1. Bump `SAVE_VERSION` in `save_manager.gd`.
+2. Add one migration in `_register_migrations()` that upgrades data from the previous version by **one** step:
+   ```gdscript
+   func _register_migrations() -> void:
+   	register_migration(1, func(data: Dictionary) -> Dictionary:
+   		data["gold"] = data.get("coins", 0)   # v2 renamed coins to gold
+   		data.erase("coins")
+   		return data)
+   ```
+3. Add a fixture: keep a real save of the old version in `test/fixtures/saves/` and a test that loads it. `test/unit/test_save_manager.gd` shows how, with `v1_slot.save`.
+
+On load, migrations run in order from the file's version up to the current one (v1 → v2 → v3), so each step only has to know about its neighbour. Never edit an old migration after release, since players' files depend on it. A save from a **newer** game version, or one with a missing step, isn't loaded and logs an error.
+
+### File format
+
+A save is a **JSON** file. The outer object is readable (`version`, `meta`, `data`). `meta` and `data` are encoded with `JSON.from_native()`, which keeps Godot types: ints stay ints (plain JSON turns every number into a float), and `Vector2`, `Color`, `StringName` and the like survive. Objects and resources are **never** decoded, so a save file can't run code. That makes it safe to load save files players share.
+
+| Format | For | Against |
+| --- | --- | --- |
+| **JSON + `from_native`** (used) | text: diffable, easy to inspect and fix by hand; type-safe; safe to load | bigger and slower than binary; typed values are verbose to read |
+| `var_to_bytes` | compact and fast; keeps all types | binary, so not inspectable; needs care with objects (`bytes_to_var_with_objects` can run code) |
+| plain `JSON.stringify` | the most readable | loses types (ints become floats, vectors become strings) |
+
+If saves get large (big worlds), switch `_write_atomic()` / `_read()` to `var_to_bytes` / `bytes_to_var` and keep the envelope the same.
+
+**Where saves live:** `user://` is named after the project's `config/name`. Renaming the game after release moves every save, so players would lose theirs (see [Starting a new game](#starting-a-new-game-from-the-template)).
+
+**Seeds:** if a run should continue with the same randomness, put `RngManager.get_seed()` into the save and call `RngManager.set_seed()` after loading.
+
+**Tests** set `SaveManager.saves_dir` to a temporary folder, so they never touch real saves.
 
 ## RngManager
 
@@ -488,9 +552,10 @@ Automated tests use **[GUT](https://github.com/bitwes/Gut) 9.7.1** (the GUT rele
 
 ```
 test/
-  unit/            pure logic: RngManager, SettingsManager, SceneRegistry
+  unit/            pure logic: RngManager, SettingsManager, SaveManager, SceneRegistry
   integration/     real autoloads: scene changes, pause, menus, audio, boot
   sandbox/         click-through scenes for poking at things by hand (F6)
+  fixtures/        files tests load (e.g. an old save to migrate); never run
   template_test.gd base class for integration tests
 .gutconfig.json    which folders run, test_ prefix, exit when done
 ```
