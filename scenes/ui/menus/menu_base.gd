@@ -56,7 +56,10 @@ func grab_default_focus() -> void:
 		return
 	var target := _first_focusable(get_node_or_null(default_focus))
 	if target:
+		# Automatic focus isn't a player action: no hover sound (see UIButton).
+		target.set_meta(&"silent_focus", true)
 		target.grab_focus()
+		target.remove_meta(&"silent_focus")
 
 
 # default_focus may point at a wrapper (e.g. UIButton) that can't take focus
