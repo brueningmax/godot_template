@@ -17,13 +17,18 @@ var adopt_standalone := true
 ## Seconds a load may run before the loading screen appears. Loads that finish
 ## sooner show nothing. 0 shows it for every scene that isn't already in memory.
 var loading_screen_delay: float = DEFAULT_LOADING_SCREEN_DELAY
-## Registered scene used as the loading screen, or -1 for none.
-var loading_screen_key: int = SceneRegistry.SceneKey.LOADING_SCREEN
+## Registered scene used as the loading screen, or -1 for none. It's loaded
+## up front, so showing it never waits for a load itself.
+var loading_screen_key: int = SceneRegistry.SceneKey.LOADING_SCREEN:
+	set(value):
+		loading_screen_key = value
+		_loading_screen_packed = _load_now(value)
 var fade_rect: ColorRect
 var _changing := false
 # Paths with a threaded load started by us that hasn't been collected yet.
 var _requested: Dictionary[String, bool] = {}
 var _loading_screen: Node = null
+var _loading_screen_packed: PackedScene = null
 
 # Incremented for every intermediate screen, so a stale timer or skip from an
 # earlier screen can't end a later one.
@@ -48,6 +53,8 @@ func _ready() -> void:
 	fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	overlay.add_child(fade_rect)
 	fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+
+	_loading_screen_packed = _load_now(loading_screen_key)
 
 
 # Transition to a scene directly, with an optional fade. The scene loads on a
@@ -152,7 +159,7 @@ func change_scene_with_screen(
 
 	SignalBus.scene_change_started.emit(next_key)
 	_adopt_standalone_scene()
-	_request(next_path)
+	_request(next_path)  # loads during the fades and the screen
 
 	if current_scene:
 		_set_visible(current_scene, false)
@@ -162,7 +169,8 @@ func change_scene_with_screen(
 		_free_scene(current_scene)
 	current_scene = null
 
-	var screen_node := _instantiate_now(screen_key)
+	var screen_packed := _load_now(screen_key)
+	var screen_node: Node = screen_packed.instantiate() if screen_packed else null
 	if screen_node:
 		overlay.add_child(screen_node)
 		overlay.move_child(fade_rect, -1)  # keep the fade drawn above the screen
@@ -221,6 +229,14 @@ func _finish_change(payload: Dictionary) -> void:
 # --- Loading ---
 
 
+# Quitting while a scene loads would abort the load, which Godot reports as
+# errors ("Parse Error: Failed" in the .tscn). Let pending loads finish first.
+func _exit_tree() -> void:
+	for path in _requested.keys():
+		ResourceLoader.load_threaded_get(path)
+	_requested.clear()
+
+
 # Starts a threaded load of `path`, unless it's already in memory or loading.
 func _request(path: String) -> void:
 	if _requested.has(path) or ResourceLoader.has_cached(path):
@@ -269,9 +285,10 @@ func _await_scene(path: String) -> PackedScene:
 func _show_loading_screen() -> void:
 	if _loading_screen != null:
 		return
-	_loading_screen = _instantiate_now(loading_screen_key)
-	if _loading_screen:
-		overlay.add_child(_loading_screen)  # on top of screens and the fade
+	if _loading_screen_packed == null:
+		return
+	_loading_screen = _loading_screen_packed.instantiate()
+	overlay.add_child(_loading_screen)  # on top of screens and the fade
 
 
 func _hide_loading_screen() -> void:
@@ -285,13 +302,12 @@ func _set_loading_progress(value: float) -> void:
 		_loading_screen.call("set_progress", value)
 
 
-# Loads a small registered scene (screens) on the spot. Null for no scene.
-func _instantiate_now(key: int) -> Node:
+# Loads a small registered scene (screens) on the main thread. Null for none.
+func _load_now(key: int) -> PackedScene:
 	var path := SceneRegistry.path_of(key)
 	if path == "" or not ResourceLoader.exists(path):
 		return null
-	var packed := load(path) as PackedScene
-	return packed.instantiate() if packed else null
+	return load(path) as PackedScene
 
 
 # --- Helpers ---
