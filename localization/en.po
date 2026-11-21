@@ -123,6 +123,12 @@ msgstr ""
 msgid "Pause"
 msgstr ""
 
+msgid "Debug overlay"
+msgstr ""
+
+msgid "Debug console"
+msgstr ""
+
 msgid "Reset controls"
 msgstr ""
 

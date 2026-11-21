@@ -18,6 +18,7 @@ extends MenuBase
 ##           menu returning that list (for lists only known at runtime)
 ##   BINDING section "input", key = an action in InputBindings.REBINDABLE:
 ##           a keyboard and a controller RebindButton
+## Any row: debug_only = true hides it in release builds.
 ##
 ## Controller: LB / RB (ui_tab_previous / ui_tab_next, also PageUp / PageDown)
 ## switch tabs; B goes back like Esc.
@@ -141,6 +142,22 @@ const ROWS := [
 	},
 	{tab = "Controls", section = "input", key = "jump", label = "Jump", type = RowType.BINDING},
 	{tab = "Controls", section = "input", key = "pause", label = "Pause", type = RowType.BINDING},
+	{
+		tab = "Controls",
+		section = "input",
+		key = "debug_overlay",
+		label = "Debug overlay",
+		type = RowType.BINDING,
+		debug_only = true,
+	},
+	{
+		tab = "Controls",
+		section = "input",
+		key = "debug_console",
+		label = "Debug console",
+		type = RowType.BINDING,
+		debug_only = true,
+	},
 ]
 
 ## Window sizes offered in windowed mode (the current one is added if missing).
@@ -165,12 +182,12 @@ var _snapshot: Dictionary = {}
 
 
 func _ready() -> void:
-	for row in ROWS:
+	for row in _rows():
 		_build_row(row)
 	if _tab_boxes.has("Controls"):
 		_add_reset_controls_button(_tab_boxes["Controls"])
-	if not ROWS.is_empty():
-		default_focus = _controls[_id(ROWS[0])].get_path()
+	if not _rows().is_empty():
+		default_focus = _controls[_id(_rows()[0])].get_path()
 	tabs.tab_changed.connect(_on_tab_changed)
 	btn_back.pressed.connect(cancel)
 	btn_apply.pressed.connect(apply)
@@ -281,7 +298,7 @@ func _tab_box(title: String) -> VBoxContainer:
 
 ## Shows the current values without triggering the controls' signals.
 func _refresh() -> void:
-	for row in ROWS:
+	for row in _rows():
 		var control: Control = _controls[_id(row)]
 		var value: Variant = SettingsManager.get_setting(row.section, row.key)
 		match row.type:
@@ -381,6 +398,11 @@ func _language_options() -> Array:
 		var native := TranslationServer.get_translation_object(locale).get_message(&"LANGUAGE_NAME")
 		options.append([locale, str(native) if native != &"" else locale])
 	return options
+
+
+# ROWS without debug_only rows in release builds.
+func _rows() -> Array:
+	return ROWS.filter(func(row): return OS.is_debug_build() or not row.get("debug_only", false))
 
 
 func _id(row: Dictionary) -> String:

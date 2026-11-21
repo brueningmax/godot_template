@@ -123,6 +123,12 @@ msgstr "Springen"
 msgid "Pause"
 msgstr "Pause"
 
+msgid "Debug overlay"
+msgstr "Debug-Overlay"
+
+msgid "Debug console"
+msgstr "Debug-Konsole"
+
 msgid "Reset controls"
 msgstr "Steuerung zurücksetzen"
 

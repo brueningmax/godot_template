@@ -44,6 +44,8 @@ func test_devices_and_names() -> void:
 
 func test_every_rebindable_action_has_keyboard_and_gamepad_defaults() -> void:
 	for action in InputBindings.REBINDABLE:
+		if action.begins_with("debug_"):
+			continue  # developer tools: keyboard only
 		assert_true(InputMap.has_action(action), action)
 		var devices := []
 		for event in InputBindings.default_events(action):
@@ -126,3 +128,15 @@ func _button(index: JoyButton) -> InputEventJoypadButton:
 	var e := InputEventJoypadButton.new()
 	e.button_index = index
 	return e
+
+
+func test_debug_actions_are_rebindable_by_physical_key() -> void:
+	assert_has(InputBindings.REBINDABLE, "debug_console")
+	var event := InputBindings.event_for("debug_console", InputBindings.Device.KEYBOARD)
+	assert_ne(int(event.physical_keycode), KEY_NONE, "stored by position")
+	assert_string_starts_with(InputBindings.serialize(event), "key:")
+
+
+func test_unknown_saved_action_is_ignored_with_warning() -> void:
+	InputBindings.apply("no_such_action", ["key:65"])
+	assert_false(InputMap.has_action("no_such_action"))

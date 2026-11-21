@@ -13,7 +13,9 @@ enum Device { KEYBOARD, GAMEPAD }
 
 ## Actions players may rebind, in menu order. Add your game's actions here and
 ## a row for each in the settings menu.
-const REBINDABLE: Array[String] = ["up", "down", "left", "right", "jump", "pause"]
+const REBINDABLE: Array[String] = [
+	"up", "down", "left", "right", "jump", "pause", "debug_overlay", "debug_console"
+]
 
 ## A stick has to move this far (0..1) to count as a binding.
 const AXIS_THRESHOLD := 0.6
@@ -127,7 +129,7 @@ static func display_name(event: InputEvent) -> String:
 			# Headless (tests, CI) has no layout and errors, so use the position.
 			keycode = event.physical_keycode
 			if DisplayServer.get_name() != "headless":
-				keycode = DisplayServer.keyboard_get_keycode_from_physical(event.physical_keycode)
+				keycode = DisplayServer.keyboard_get_label_from_physical(event.physical_keycode)
 		return OS.get_keycode_string(keycode)
 	if event is InputEventMouseButton:
 		return "Mouse %d" % event.button_index
@@ -166,6 +168,7 @@ static func event_for(action: String, device: int) -> InputEvent:
 ## serialize() strings; null restores the Project Settings events.
 static func apply(action: String, value: Variant) -> void:
 	if not InputMap.has_action(action):
+		Log.warn(&"Input", "Saved binding for unknown action '%s' ignored" % action)
 		return
 	InputMap.action_erase_events(action)
 	if value == null:

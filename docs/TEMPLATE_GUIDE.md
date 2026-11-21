@@ -498,13 +498,14 @@ Each new menu gets all of this by extending `MenuBase` and setting `default_focu
 
 ### Controls and rebinding
 
-The player-rebindable actions are listed in `InputBindings.REBINDABLE` (`globals/settings_manager/input_bindings.gd`): `up`, `down`, `left`, `right`, `jump`, `pause`. Each has a **keyboard** and a **controller** binding, shown on the settings menu's **Controls** tab.
+The player-rebindable actions are listed in `InputBindings.REBINDABLE` (`globals/settings_manager/input_bindings.gd`): `up`, `down`, `left`, `right`, `jump`, `pause`, plus `debug_overlay` and `debug_console`. Each has a **keyboard** and a **controller** binding, shown on the settings menu's **Controls** tab. The two debug rows have `debug_only = true`, so they're hidden in release builds.
 
 - **Rebinding:** press a binding's button, then the new key, mouse button (not left), controller button or stick direction. Esc or a left click cancels. Like every setting it's a preview until **Apply**, and **Back** reverts it.
 - **Conflicts swap:** binding a key that another rebindable action uses gives that action the old key instead, so no action ends up unbound by accident.
 - **Reset controls** (on the tab) or `SettingsManager.reset_controls()` returns every action to Project Settings → Input Map.
 - **Storage:** only changed actions are saved, in the `input` section of `settings.cfg`, as readable text: `left=["key:74", "joy_axis:0:-"]` (physical key code, mouse button, controller button, or axis and direction). Actions without an entry use the Input Map, so changing a default in the project reaches every player who hasn't rebound that action.
-- **Keys are physical positions,** like the project's defaults: WASD stays in the same place on AZERTY or QWERTZ keyboards. The button shows the key's label on the player's layout.
+- **Keys are physical positions,** like the project's defaults: WASD stays in the same place on AZERTY or QWERTZ keyboards. The button shows the key's label on the player's layout (`DisplayServer.keyboard_get_label_from_physical()`), so the debug console key shows as `^` on a German keyboard.
+- A saved binding for an action that no longer exists is ignored with a `Log.warn` (category `Input`).
 - Bindings ignore modifier keys (Shift, Ctrl), and controller bindings apply to every connected controller.
 
 **Adding a rebindable action:**
