@@ -33,6 +33,8 @@ Thanks for helping. This page covers the rules that keep the template consistent
 | `globals/<system>/` | Autoloaded systems, one folder each (script, scenes, resources it owns). |
 | `scenes/` | Everything that's instanced: `game/`, `ui/menus/`, `ui/components/`, `debug/`. One folder per scene, holding its `.tscn`, script and scene-local assets (sounds, textures). |
 | `resources/` | Shared `.tres` data, e.g. audio registries and the bus layout. |
+| `data/` | Game content as `Definition` resources, one folder per type (script + `.tres` files), loaded by the `Definitions` autoload. |
+| `localization/` | Translation files (`messages.pot`, one `.po` per language). |
 | `assets/` | Shared raw assets (audio, textures, fonts) used by several scenes. |
 | `test/` | `unit/`, `integration/` (automated, GUT), `sandbox/` (click-through scenes). |
 | `tools/` | Developer scripts (`check.sh`, `check_scripts.gd`, `rename_project.gd`). |

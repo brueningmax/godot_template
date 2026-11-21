@@ -13,17 +13,18 @@ How the template's systems work, how to use them, and what isn't obvious from th
 5. [SignalBus](#signalbus)
 6. [SettingsManager](#settingsmanager)
 7. [SaveManager](#savemanager)
-8. [RngManager](#rngmanager)
-9. [GameState and pausing](#gamestate-and-pausing)
-10. [SceneManager and SceneRegistry](#scenemanager-and-sceneregistry)
-11. [Audio](#audio)
-12. [Menus and UI](#menus-and-ui)
-13. [Localization](#localization)
-14. [Debug tools](#debug-tools)
-15. [Debugging in VS Code](#debugging-in-vs-code)
-16. [Testing](#testing)
-17. [CI and releases](#ci-and-releases)
-18. [Conventions](#conventions)
+8. [Data definitions](#data-definitions)
+9. [RngManager](#rngmanager)
+10. [GameState and pausing](#gamestate-and-pausing)
+11. [SceneManager and SceneRegistry](#scenemanager-and-sceneregistry)
+12. [Audio](#audio)
+13. [Menus and UI](#menus-and-ui)
+14. [Localization](#localization)
+15. [Debug tools](#debug-tools)
+16. [Debugging in VS Code](#debugging-in-vs-code)
+17. [Testing](#testing)
+18. [CI and releases](#ci-and-releases)
+19. [Conventions](#conventions)
 
 ---
 
@@ -89,8 +90,9 @@ Autoloads are created in the order listed in **Project Settings → Globals → 
 5. `SettingsManager`: loads `user://settings.cfg` and applies volumes, so it must come after the audio bus layout is active (always true) and after `SignalBus`.
 6. `GameState`
 7. `SaveManager`: after `GameState`, whose state decides when play time counts.
-8. `SceneManager`
-9. `Debug`: a **scene** (`globals/debug/debug.tscn`) so its options are editable in the inspector. Last, because it uses all the others.
+8. `Definitions`: loads and checks all data definitions (`res://data/`), so they're ready before any scene runs.
+9. `SceneManager`
+10. `Debug`: a **scene** (`globals/debug/debug.tscn`) so its options are editable in the inspector. Last, because it uses all the others.
 
 **Gotcha:** an autoload's name and its script's `class_name` must not be the same, or the global is ambiguous. That's why the scene manager's script is `class_name MainRoot` while the autoload is called `SceneManager`.
 
@@ -287,6 +289,60 @@ If saves get large (big worlds), switch `_write_atomic()` / `_read()` to `var_to
 **Seeds:** if a run should continue with the same randomness, put `RngManager.get_seed()` into the save and call `RngManager.set_seed()` after loading.
 
 **Tests** set `SaveManager.saves_dir` to a temporary folder, so they never touch real saves.
+
+## Data definitions
+
+`globals/definitions/`: the `Definition` base resource and the `Definitions` autoload (class `DefinitionRegistry`). Use them for game content that is data rather than code: cards, items, enemies, levels. Each piece of content is a `.tres` file you edit in the inspector.
+
+```gdscript
+var strike := Definitions.get_definition(CardDefinition, &"strike") as CardDefinition
+for card in Definitions.with_tag(CardDefinition, &"starter"):
+	deck.append(card)
+Definitions.all(CardDefinition)   # every card, sorted by id
+Definitions.ids(CardDefinition)   # [&"defend", &"strike", &"strike_plus"]
+```
+
+The template ships one example type, `CardDefinition` (`data/cards/`), with three cards. Replace or delete it.
+
+### Defining a new data type
+
+1. Write a subclass with a `class_name`, next to its data, e.g. `data/enemies/enemy_definition.gd`:
+   ```gdscript
+   class_name EnemyDefinition
+   extends Definition
+
+   @export var display_name := ""
+   @export var health := 10
+   @export var drops: StringName   # id of an ItemDefinition, "" = none
+
+   func _validate(problems: PackedStringArray, registry: DefinitionRegistry) -> void:
+   	if health <= 0:
+   		problems.append("health must be positive")
+   	check_ref(problems, registry, "drops", ItemDefinition, drops)
+   ```
+2. In the FileSystem dock: **right-click `data/enemies/` → New Resource… → EnemyDefinition**, and save it as `wolf.tres`. The file name is the `id` unless you set `id` yourself.
+3. Use it: `Definitions.get_definition(EnemyDefinition, &"wolf")`.
+
+What the registry does:
+
+- **Finds everything under `res://data/`** (`Definitions.definitions_dir`), in any subfolder, at startup. Other resources in those folders are ignored.
+- **Indexes by type and id.** A definition is listed under its own `class_name` and under every parent class up to `Definition`: with `WeaponDefinition extends ItemDefinition`, `all(ItemDefinition)` includes the weapons. Types can be passed as the class (`CardDefinition`) or its name (`&"CardDefinition"`).
+- **Validates at startup:** duplicate ids within a type, a missing id, and every definition's own `_validate()` checks: required fields, ranges, and references to other definitions by id (`check_ref()`). Each problem is logged with the type, id and file. In debug builds they're `Log.error`, so a broken data file **fails the tests and CI**. In release builds they're warnings. `get_definition()` with an unknown id returns `null` and logs a warning.
+- **Debug console:** `defs` lists types, `defs CardDefinition` lists ids, `def CardDefinition strike` shows one definition's fields.
+
+**References between definitions:** store the other definition's **id** (`StringName`) and check it with `check_ref()`, as above. You can also export a typed resource (`@export var drops: ItemDefinition`) and drag the file in. That's type-safe, but a moved or deleted file then shows up as a load error instead of a readable validation message.
+
+### Exported builds
+
+When a game is exported, Godot converts `.tres` files to binary and stores them as `strike.tres.remap` plus a converted file. A plain `DirAccess` folder scan in an exported game finds only the `.remap` names and would load nothing. The registry lists folders with `ResourceLoader.list_directory()`, which returns the original names in the editor and in exports alike.
+
+Checked by exporting a pack (`godot --headless --export-pack Linux game.pck`) and running it with `godot --headless --main-pack game.pck`: the log shows `[Data] 3 definitions loaded`.
+
+Other pitfalls:
+
+- Keep definitions in the export: the presets export **all resources** except `addons/gut`, `test`, `tools` and `docs`. A filter that exports only scenes would drop the `.tres` files, because nothing `preload()`s them.
+- Definitions are shared, cached resources. **Don't change them at runtime**, since every user of `strike` would see the change. Keep runtime state (a card's current cost after a buff) in your own objects, or `duplicate()` the definition.
+- Everything under `res://data/` is loaded at startup. For thousands of large definitions, split them into folders and scan on demand with a separate `DefinitionRegistry.new().scan("res://data/levels")`.
 
 ## RngManager
 

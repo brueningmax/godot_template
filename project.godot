@@ -28,6 +28,7 @@ Audio="*uid://dweltaoi2hd0o"
 SettingsManager="*res://globals/settings_manager/settings_manager.gd"
 GameState="*res://globals/game_state/game_state.gd"
 SaveManager="*res://globals/save_manager/save_manager.gd"
+Definitions="*res://globals/definitions/definition_registry.gd"
 SceneManager="*uid://d20rnm35g01po"
 Debug="*res://globals/debug/debug.tscn"
 
