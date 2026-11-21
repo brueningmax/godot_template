@@ -78,6 +78,12 @@ debug_console={
 ]
 }
 
+[internationalization]
+
+locale/translations=PackedStringArray("res://localization/en.po", "res://localization/de.po")
+locale/translations_pot_files=PackedStringArray("res://scenes/ui/menus/main_menu/main_menu.tscn", "res://scenes/ui/menus/pause_menu/pause_menu.tscn", "res://scenes/ui/menus/settings_menu/settings_menu.tscn", "res://scenes/ui/menus/settings_menu/settings_menu.gd", "res://scenes/ui/loading_screen/loading_screen.tscn", "res://scenes/game/hello_world/hello_world.gd", "res://scenes/debug/scene_library/scene_library.tscn", "res://scenes/debug/scene_library/debug_launcher_3d.tscn")
+locale/fallback="en"
+
 [physics]
 
 3d/physics_engine="Jolt Physics"

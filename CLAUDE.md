@@ -24,6 +24,7 @@ gdformat . && gdlint .
 - Put start-up navigation in `globals/scene_manager/boot.gd` only.
 - Use `GameState` for pause and mouse mode, and `SceneManager` for scene changes.
 - Add `SceneKey` values only at the end of the enum.
+- Write UI text in English and add every new string to `localization/messages.pot` and each `.po` file (`test_localization.gd` checks scene texts).
 
 ## Never
 

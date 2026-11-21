@@ -8,7 +8,9 @@ extends MenuBase
 ## To add a setting to the menu, add one entry to ROWS. The setting itself
 ## (default value and how it's applied) lives in SettingsManager.
 ##
-## Row fields: section, key, label, type, tab (tab title), and per type:
+## Row fields: section, key, label, type, tab (tab title), and per type.
+## Labels, tab titles and option labels are English source text; controls
+## translate them automatically (see localization/).
 ##   SLIDER  min, max, step (default 0..1, 0.05), format: "percent" (default),
 ##           "x" (1.25x) or "int"
 ##   TOGGLE  -
@@ -185,6 +187,7 @@ func _build_row(row: Dictionary) -> void:
 			var readout := Label.new()
 			readout.custom_minimum_size.x = 56
 			readout.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			readout.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED  # a number
 			slider.value_changed.connect(
 				func(v: float):
 					readout.text = _format(row, v)
@@ -223,6 +226,7 @@ func _tab_box(title: String) -> VBoxContainer:
 		box.name = title
 		box.add_theme_constant_override("separation", 12)
 		tabs.add_child(box)
+		tabs.set_tab_title(box.get_index(), title)  # translated by the tab bar
 		_tab_boxes[title] = box
 	return _tab_boxes[title]
 
@@ -277,12 +281,15 @@ func _resolution_options() -> Array:
 	return options
 
 
-# "System" plus every language with a loaded translation.
+# "System" plus every language with a loaded translation, each named in its
+# own language (the LANGUAGE_NAME entry of its .po file), so players find theirs.
 func _language_options() -> Array:
 	var options := [["", "System"]]
 	for locale in TranslationServer.get_loaded_locales():
-		if not options.any(func(o): return o[0] == locale):
-			options.append([locale, TranslationServer.get_locale_name(locale)])
+		if options.any(func(o): return o[0] == locale):
+			continue
+		var native := TranslationServer.get_translation_object(locale).get_message(&"LANGUAGE_NAME")
+		options.append([locale, str(native) if native != &"" else locale])
 	return options
 
 

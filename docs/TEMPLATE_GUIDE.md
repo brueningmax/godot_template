@@ -18,11 +18,12 @@ How the template's systems work, how to use them, and what isn't obvious from th
 10. [SceneManager and SceneRegistry](#scenemanager-and-sceneregistry)
 11. [Audio](#audio)
 12. [Menus and UI](#menus-and-ui)
-13. [Debug tools](#debug-tools)
-14. [Debugging in VS Code](#debugging-in-vs-code)
-15. [Testing](#testing)
-16. [CI and releases](#ci-and-releases)
-17. [Conventions](#conventions)
+13. [Localization](#localization)
+14. [Debug tools](#debug-tools)
+15. [Debugging in VS Code](#debugging-in-vs-code)
+16. [Testing](#testing)
+17. [CI and releases](#ci-and-releases)
+18. [Conventions](#conventions)
 
 ---
 
@@ -397,6 +398,8 @@ A scene that is already in memory (still referenced somewhere, or preloaded) is 
 
 - **The loading screen** is the registered scene `SceneKey.LOADING_SCREEN` (`scenes/ui/loading_screen/`). Restyle it freely. `SceneManager` only calls its `set_progress(value: float)` (0–1), if it has one. Set `SceneManager.loading_screen_key = -1` to never show one. `loading_screen_delay = 0` shows it for every load from disk, which is handy for checking how it looks.
 - **Preloading:** `SceneManager.preload_scene(SceneRegistry.SceneKey.GAME_SCENE)` starts loading in the background, e.g. the next level while the player is in a menu or near the end of this one. The later change then starts instantly. A preloaded scene stays in memory until you change to it.
+- **Quitting during a load** waits for the load to finish (`SceneManager._exit_tree()`). Godot reports an aborted load as errors, which would fail CI's smoke runs. Those count frames, not seconds, so they can end while a scene is still loading.
+- The loading screen itself is loaded when `SceneManager` starts, so showing it never has to wait for a load.
 - **Failures** are logged with `Log.error` (so they fail tests and CI) and the old scene stays. Load times are logged at `debug` level: `[Scene] loaded res://… in 12 ms`.
 - **Making a scene load well:** it's loaded off the main thread, so its resources must be loadable there. Plain scenes and resources are fine. Don't do heavy work in `_init()` of scripts that a scene's *resources* use. A scene's `_ready()` runs on the main thread as usual, after loading, and may still cause a hitch. Spread heavy setup over several frames there if needed.
 - **Web builds** are exported without threads (see [Exporting](#exporting-and-releases)), so loads there don't run in parallel with the game. They still work, but the loading screen may not animate while a big scene loads.
@@ -474,7 +477,52 @@ Gotchas:
 
 **Back / Esc in overlay menus:** if the menu on top has a `cancel()` method, Esc calls it, and the menu closes itself by emitting its back signal. The settings menu reverts its changes there. Menus without `cancel()` are simply closed.
 
+Menu texts are English source text, translated automatically. See [Localization](#localization).
+
 > Planned: controller support in [#16](https://github.com/brueningmax/godot_template/issues/16).
+
+## Localization
+
+UI text is written in **English in the scenes and scripts** and translated through **gettext PO files** in `localization/`:
+
+```
+localization/
+  messages.pot   template: every translatable English string (msgid)
+  en.po          English: only LANGUAGE_NAME; everything else falls back to the source text
+  de.po          German, the example second language
+```
+
+Both `.po` files are registered in **Project Settings → Localization → Translations** (`internationalization/locale/translations` in `project.godot`), and `en` is the fallback locale.
+
+**Why PO and not CSV:** Godot loads `.po` files directly. A CSV is first *imported* into generated `.translation` files, which shouldn't be committed. On a fresh clone (and in CI) Godot then tries to load the registered `.translation` files before it has imported them, and logs errors on every cold start. PO also has plural forms and context, Godot can generate the template for you, and translators know the tools (Poedit, Weblate, Crowdin). The price is one file per language instead of one table.
+
+**How text gets translated:**
+
+- **Controls translate themselves.** A `Label`, `Button`, `OptionButton` item, tab title or `placeholder_text` whose text matches a msgid shows the translation, and updates **live** when the language changes. Most UI needs no code at all.
+- **Text built in code** uses `tr()`: `label.text = tr("Seed: %s") % seed`. It does **not** update by itself when the language changes. Rebuild it on `NOTIFICATION_TRANSLATION_CHANGED`, as `hello_world.gd` does. Set `auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED` on such labels, so the already translated text isn't looked up again.
+- **The language setting** (`interface/language`) calls `TranslationServer.set_locale()`. `""` follows the system language: a German system (`de_DE`) gets `de.po`.
+
+### Adding a string
+
+1. Write it in English in the scene or in a `tr("…")` call.
+2. Add it to the `.pot` and each `.po`. Either by hand (a `msgid` / `msgstr` pair), or let Godot regenerate the template: **Project Settings → Localization → POT Generation** lists the files to scan (already filled in), then **Generate POT**. Merge the new template into each language with Poedit (Catalog → Update from POT file) or `msgmerge -U de.po messages.pot`.
+3. Translate it in `de.po`. `test/integration/test_localization.gd` fails if a text in a template scene or a settings row has no German translation.
+
+### Adding a language
+
+1. Copy `de.po` to e.g. `fr.po`, set `"Language: fr\n"` in its header, and translate every `msgstr`. Set `LANGUAGE_NAME` to the language's own name (`Français`): the language dropdown shows that, so players can find their language.
+2. Add the file in **Project Settings → Localization → Translations**.
+3. It appears in the language dropdown automatically.
+
+### Pitfalls
+
+- **Formatting:** translate the whole sentence with its placeholder, then format: `tr("Seed: %s") % seed`. Never glue translated pieces together (`tr("Seed") + ": " + seed`), because word order differs between languages. Use `%s` / `%d` placeholders, and keep their number and order in every translation.
+- **Plurals:** `tr_n("%d coin", "%d coins", n) % n`. Each `.po` file's `Plural-Forms` header defines how many forms the language has.
+- **Same English, different meaning:** give a context, `tr("Back", "navigation")`, which becomes `msgctxt` in the `.po` file.
+- **Text that must not be translated** (player names, numbers, debug output): set `auto_translate_mode` to `Disabled` on the control. Otherwise a name that happens to equal a msgid gets translated.
+- **Longer text:** German is often 30 % longer than English. Leave room in layouts, and check them in the longest language.
+- The **project name** on the splash screen isn't translated. Godot's `application/config/name_localized` setting does that if you need it.
+- The **debug overlay and console** stay in English on purpose. They're developer tools, and their output ends up in bug reports.
 
 ## Debug tools
 
@@ -781,7 +829,7 @@ The second command enables the per-commit hooks. The third is optional: it also 
 
 `.gitignore` is grouped and commented. In short, Git ignores:
 
-- **Godot:** the `.godot/` cache, generated `*.translation` files, and `export_credentials.cfg` (export signing keys and passwords, which must never be committed).
+- **Godot:** the `.godot/` cache, generated `*.translation` files (in case a game switches to CSV translations), and `export_credentials.cfg` (export signing keys and passwords, which must never be committed).
 - **Builds:** `/build/`, where exports go.
 - **OS and editor clutter:** `.DS_Store`, `Thumbs.db`, `.idea/`, swap files, and everything in `.vscode/` **except** the four shared files (`launch.json`, `settings.json`, `extensions.json`, `tasks.json`).
 - **Python dev tools:** `__pycache__/`, `.venv/`.

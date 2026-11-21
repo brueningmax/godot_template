@@ -1,0 +1,146 @@
+# Template UI strings. See docs/TEMPLATE_GUIDE.md -> "Localization".
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: de\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. Name of this language, in this language (shown in the language list).
+msgid "LANGUAGE_NAME"
+msgstr "Deutsch"
+
+msgid "Seed"
+msgstr "Seed"
+
+msgid "random"
+msgstr "zufällig"
+
+msgid "Play"
+msgstr "Spielen"
+
+msgid "Debug"
+msgstr "Debug"
+
+msgid "Options"
+msgstr "Optionen"
+
+msgid "Quit"
+msgstr "Beenden"
+
+msgid "Game Paused"
+msgstr "Pausiert"
+
+msgid "Resume"
+msgstr "Weiter"
+
+msgid "Restart"
+msgstr "Neu starten"
+
+msgid "Settings"
+msgstr "Einstellungen"
+
+msgid "Quit to Menu"
+msgstr "Zum Menü"
+
+msgid "Back"
+msgstr "Zurück"
+
+msgid "Apply"
+msgstr "Übernehmen"
+
+msgid "Audio"
+msgstr "Audio"
+
+msgid "Display"
+msgstr "Anzeige"
+
+msgid "Interface"
+msgstr "Oberfläche"
+
+msgid "Master"
+msgstr "Gesamt"
+
+msgid "Music"
+msgstr "Musik"
+
+msgid "Effects"
+msgstr "Effekte"
+
+msgid "Ambience"
+msgstr "Umgebung"
+
+msgid "Window mode"
+msgstr "Fenstermodus"
+
+msgid "Windowed"
+msgstr "Fenster"
+
+msgid "Fullscreen"
+msgstr "Vollbild"
+
+msgid "Exclusive fullscreen"
+msgstr "Exklusives Vollbild"
+
+msgid "Window size"
+msgstr "Fenstergröße"
+
+msgid "VSync"
+msgstr "VSync"
+
+msgid "FPS cap"
+msgstr "FPS-Limit"
+
+msgid "Unlimited"
+msgstr "Unbegrenzt"
+
+msgid "UI scale"
+msgstr "UI-Skalierung"
+
+msgid "Language"
+msgstr "Sprache"
+
+msgid "System"
+msgstr "System"
+
+msgid "Loading…"
+msgstr "Lädt…"
+
+msgid ""
+"Hello, world!\n"
+"Seed: %s\n"
+"Last roll: %s\n"
+"\n"
+"Move: WASD   Roll: Space   Pause: Esc"
+msgstr ""
+"Hallo, Welt!\n"
+"Seed: %s\n"
+"Letzter Wurf: %s\n"
+"\n"
+"Bewegen: WASD   Würfeln: Leertaste   Pause: Esc"
+
+msgid "Project Scenes"
+msgstr "Projektszenen"
+
+msgid "Search scenes..."
+msgstr "Szenen suchen..."
+
+msgid "Launch with External Camera"
+msgstr "Mit externer Kamera starten"
+
+msgid "Back to Menu"
+msgstr "Zurück zum Menü"
+
+msgid "Scene Preview"
+msgstr "Szenenvorschau"
+
+msgid "Select a Scene to Preview"
+msgstr "Szene für die Vorschau wählen"
+
+msgid "Launch Scene"
+msgstr "Szene starten"
+
+msgid "Back to Library"
+msgstr "Zurück zur Bibliothek"
+
+msgid "Enable Camera Controls"
+msgstr "Kamerasteuerung aktivieren"
