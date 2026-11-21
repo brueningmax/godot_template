@@ -14,17 +14,18 @@ How the template's systems work, how to use them, and what isn't obvious from th
 6. [SettingsManager](#settingsmanager)
 7. [SaveManager](#savemanager)
 8. [Data definitions](#data-definitions)
-9. [RngManager](#rngmanager)
-10. [GameState and pausing](#gamestate-and-pausing)
-11. [SceneManager and SceneRegistry](#scenemanager-and-sceneregistry)
-12. [Audio](#audio)
-13. [Menus and UI](#menus-and-ui)
-14. [Localization](#localization)
-15. [Debug tools](#debug-tools)
-16. [Debugging in VS Code](#debugging-in-vs-code)
-17. [Testing](#testing)
-18. [CI and releases](#ci-and-releases)
-19. [Conventions](#conventions)
+9. [Command queue](#command-queue)
+10. [RngManager](#rngmanager)
+11. [GameState and pausing](#gamestate-and-pausing)
+12. [SceneManager and SceneRegistry](#scenemanager-and-sceneregistry)
+13. [Audio](#audio)
+14. [Menus and UI](#menus-and-ui)
+15. [Localization](#localization)
+16. [Debug tools](#debug-tools)
+17. [Debugging in VS Code](#debugging-in-vs-code)
+18. [Testing](#testing)
+19. [CI and releases](#ci-and-releases)
+20. [Conventions](#conventions)
 
 ---
 
@@ -343,6 +344,81 @@ Other pitfalls:
 - Keep definitions in the export: the presets export **all resources** except `addons/gut`, `test`, `tools` and `docs`. A filter that exports only scenes would drop the `.tres` files, because nothing `preload()`s them.
 - Definitions are shared, cached resources. **Don't change them at runtime**, since every user of `strike` would see the change. Keep runtime state (a card's current cost after a buff) in your own objects, or `duplicate()` the definition.
 - Everything under `res://data/` is loaded at startup. For thousands of large definitions, split them into folders and scan on demand with a separate `DefinitionRegistry.new().scan("res://data/levels")`.
+
+## Command queue
+
+`globals/command_queue/`: `Command` and `CommandQueue`. These are classes, **not an autoload**: create a queue where you need one, e.g. one per combat. Use them when game actions must resolve **one after another** and each may wait for animations, input or other actions: card effects, turn-based combat, chained abilities.
+
+A `Command` is one step. Override `execute()`, which may `await`. The queue starts the next command only after the current one has returned.
+
+```gdscript
+var queue := CommandQueue.new("Combat")
+queue.enqueue(PlayCard.new(card, target))
+await queue.run()   # returns when the queue is empty
+```
+
+### Order
+
+| Call | Runs |
+| --- | --- |
+| `queue.enqueue(c)` | after everything already queued |
+| `queue.push_front(c)` | **next**, before everything already queued |
+
+Several `push_front()` calls in a row keep their order, and the rules apply the same way to commands added while one runs. That makes **reactions** work naturally: whatever a command pushes to the front runs right after it, in the order it was pushed, before anything that was already waiting. Reactions to those reactions run before the next one, depth-first.
+
+### Example: a card with triggered effects
+
+```gdscript
+class PlayCard:
+	extends Command
+	var card: CardDefinition
+	var target: Unit
+
+	func _init(c: CardDefinition, t: Unit) -> void:
+		card = c
+		target = t
+
+	func execute() -> void:
+		await Hand.animate_play(card)
+		queue.push_front(DealDamage.new(target, 6))
+		for relic in Player.relics_triggered_by(card):   # e.g. "whenever you play an attack"
+			queue.push_front(relic.make_command())
+		queue.enqueue(Discard.new(card))                 # after everything already queued
+
+
+class DealDamage:
+	extends Command
+	var target: Unit
+	var amount: int
+
+	func _init(t: Unit, a: int) -> void:
+		target = t
+		amount = a
+
+	func execute() -> void:
+		target.health -= amount
+		await target.play_hit()
+		if target.health <= 0:
+			queue.push_front(Die.new(target))             # resolves before the relic effects
+```
+
+Playing a card with a relic resolves as: `PlayCard` → `DealDamage` → (`Die` if lethal) → relic command → whatever was queued before → `Discard`.
+
+### API
+
+- `enqueue(c)`, `enqueue_all([...])`, `push_front(c)`.
+- `run()` runs until empty. Calling it while it's already running does nothing (the running loop picks up new commands), so it's safe to call from anywhere. With `auto_run = true`, adding to an idle queue starts it.
+- `cancel()` drops every waiting command and sets `cancelled` on the running one, which can check it after an `await` and return early. `clear()` only drops the waiting ones.
+- Signals: `command_started(command)`, `command_finished(command)`, `queue_empty`.
+- `is_running()`, `current()`, `pending()`, `size()`.
+- **History and undo:** finished commands are kept in `history` (the last `history_limit`, 50 by default). A command that overrides `can_undo()` (return `true`) and `undo()` can be undone with `await queue.undo_last()`, when the queue isn't running.
+- **Debugging:** every command is logged as `[Commands] ▶ DealDamage` at `debug` level. Turn just those on with `-- --log=Commands:debug`. The console command `queue` shows every live queue with its running, pending and recent commands. Override `describe()` for a more useful name, e.g. `"DealDamage 6 → Wolf"`.
+
+Good to know:
+
+- `command.queue` is set only while the command runs, and cleared afterwards, so finished commands in the history don't keep the queue alive.
+- Commands are `RefCounted`, not nodes. To wait for something, await a signal of a node (`await tween.finished`, `await get_tree().create_timer(0.3).timeout` through `Engine.get_main_loop()`).
+- `execute()` runs to its first `await` immediately inside `run()`. Code after `queue.enqueue()` doesn't run "after" the command unless you `await queue.run()`.
 
 ## RngManager
 
