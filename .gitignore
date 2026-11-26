@@ -33,3 +33,11 @@ desktop.ini
 __pycache__/
 .venv/
 venv/
+
+# --- graphify (knowledge graph, see .claude/skills/graphify) -----------------
+# graph.json, GRAPH_REPORT.md and the cache are committed so new sessions can
+# query and rebuild cheaply; these are regenerable or machine-specific.
+graphify-out/graph.html
+graphify-out/.graphify_python
+graphify-out/.graphify_root
+graphify-out/cache/hook_sessions/

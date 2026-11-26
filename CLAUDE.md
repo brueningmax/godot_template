@@ -44,3 +44,15 @@ gdformat . && gdlint .
 - `--script` mode doesn't load the main scene. Instance `globals/scene_manager/main.tscn` yourself to test the boot flow.
 - **Headless windows are 64×64 px.** Don't assert pixel sizes of UI in tests; assert anchors/offsets. To *see* UI, render a real frame: `xvfb-run -a -s "-screen 0 1280x720x24" godot --rendering-driver opengl3 --audio-driver Dummy --resolution 1152x648 --script <harness>` and save `root.get_viewport().get_texture().get_image()` with `save_png()` after `await RenderingServer.frame_post_draw`.
 - Smoke runs need `--fixed-fps 60` so a frame count equals game time. Headless frames otherwise run unthrottled.
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- When graphify-out/graph.json exists, run `graphify query "<question>"` before your first grep, search or source-file read for a codebase question, and put this rule in every subagent prompt that explores code. Read raw files only for lines the graph or an earlier read already located. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. When the answer is under a Markdown heading, `graphify section "<heading>"` prints that section's text, so the .md need not be opened. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, rebuild the graph with `/graphify .` to keep it current. Don't use `graphify update .`: it can't see `.gd`/`.tscn`/`.tres` files (the skill's Part A2 runs `tools/graphify_godot.py` for those), so it would leave Godot changes out.
+- The graph is only as good as `tools/graphify_godot.py`'s text rules: it finds calls on `self`, on `class_name` classes and on autoloads, not calls through typed variables. Confirm a missing edge with a grep before concluding there is none.
+- A committed graphify-out/graph.json is rewritten whole on every build, so a large diff to it in a pull request is expected. Do not flag it as churn or suggest skipping the graph rebuild or its hooks.

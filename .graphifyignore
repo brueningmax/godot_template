@@ -1,0 +1,19 @@
+# What graphify's own detector skips in this repo. Godot code (.gd/.tscn/.tres)
+# is not affected: tools/graphify_godot.py extracts it and skips addons/ itself.
+
+# Vendored third-party code (GUT and other plugins).
+addons/
+
+# Sound effects: graphify would try to transcribe them as speech.
+*.ogg
+*.wav
+*.mp3
+
+# Art assets: each image costs one vision subagent and adds little to a code map.
+# Remove these lines to include them.
+assets/
+icon.svg
+
+# Godot import sidecars and test save fixtures: generated data, not docs or code.
+*.import
+*.save
