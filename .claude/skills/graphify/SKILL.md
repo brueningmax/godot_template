@@ -766,7 +766,15 @@ If graphify saved you time, consider supporting it: https://github.com/sponsors/
 
 Replace PATH_TO_DIR with the actual absolute path of the directory that was processed.
 
-If PATH_TO_DIR is inside a git repository, add one line to the report: `graphify-out/` was written into the working tree, so unless the repository already ignores it, it will show in `git status`; the user can add `graphify-out/` to `.gitignore`, or commit only the outputs their team should share (see https://docs.graphify.com/guides/team-workflows).
+### Step 9b - Save community names (this repository)
+
+Store the names you chose in Step 5, so the no-LLM rebuild at session start (`tools/graphify_rebuild.sh`) keeps them. Then commit only the graph's inputs: `graphify-out/community_names.json` and any new files under `graphify-out/cache/semantic/`. Everything else in `graphify-out/` is git-ignored. Skip this step if `tools/graphify_rebuild.sh` is missing.
+
+```bash
+tools/graphify_rebuild.sh --save-names
+```
+
+If PATH_TO_DIR is inside a git repository, add one line to the report. In this repository, say that only the cache and the names are committed. Elsewhere, say that `graphify-out/` was written into the working tree, so unless the repository already ignores it, it will show in `git status`; the user can add `graphify-out/` to `.gitignore`, or commit only the outputs their team should share (see https://docs.graphify.com/guides/team-workflows).
 
 Then paste these sections from GRAPH_REPORT.md directly into the chat:
 - God Nodes
@@ -807,7 +815,11 @@ fi
 
 Both are non-default subcommands. `--update` re-extracts only new or changed files; `--cluster-only` reruns clustering on the existing graph. See `references/update.md` for both flows.
 
-**In this repository, `--update` and the `graphify update` CLI do not see Godot files** (`.gd`, `.tscn`, `.tres`): their change detection only tracks files graphify parses itself, and the CLI does not run Part A2. After changing Godot files, run the full pipeline (`/graphify .`) instead. That is still cheap: Part A2 takes under a second, and docs already extracted are served from the semantic cache (Step B0), so no subagents run unless docs changed. Never run `graphify update . --force` here: it would rebuild without the Godot nodes and drop them from the graph.
+**In this repository, don't use `--update` or the `graphify update` CLI.** Their change detection only tracks files graphify parses itself, so they miss `.gd`, `.tscn` and `.tres` changes and drop the Godot nodes. Instead:
+- **After code changes:** run `tools/graphify_rebuild.sh`. It rebuilds the whole graph in a few seconds with no LLM: code from source (Parts A and A2), docs from the semantic cache, the doc links (Part C2), clustering, and community names reused from `graphify-out/community_names.json`. The cloud environment's setup script runs the same script at session start, so a session's graph matches its checkout from the beginning.
+- **After doc changes**, or when the rebuild says a doc is not in the cache: run the full pipeline (`/graphify .`). Unchanged docs still come from the cache (Step B0), so subagents run only for the changed ones.
+
+**What is committed:** only the graph's inputs, which are `graphify-out/cache/semantic/` (the doc extractions), `graphify-out/community_names.json` and `graphify-out/.gdignore`. `graph.json`, `GRAPH_REPORT.md`, `graph.html` and the manifest are local build outputs and git-ignored. After a full `/graphify .` run, commit the new cache entries and the names (see Step 9b).
 
 ---
 
